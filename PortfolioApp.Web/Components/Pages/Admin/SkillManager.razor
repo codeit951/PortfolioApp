@@ -1,0 +1,227 @@
+@page "/admin/skills"
+@layout Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject ISkillService SkillService
+@inject IToastService Toast
+@rendermode InteractiveServer
+
+<PageTitle>Manage Skills</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold">Skills</h2>
+        <p class="text-muted">Track your technical expertise and proficiency</p>
+    </div>
+    <button class="btn btn-primary rounded-pill px-4" @onclick="() => OpenModal()">
+        <i class="bi bi-plus-lg me-2"></i>Add Skill
+    </button>
+</div>
+
+@if (_groupedSkills == null)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (!_groupedSkills.Any())
+{
+    <div class="card border-0 shadow-sm rounded-4 text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-lightning text-muted fs-1"></i>
+            <p class="text-muted mt-3">No skills added yet.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var group in _groupedSkills)
+        {
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
+                    <div class="card-header border-0 py-3 px-4">
+                        <h5 class="fw-bold mb-0">@group.Key</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            @foreach (var skill in group.Value)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="fw-semibold">@skill.Name</span>
+                                            <span class="small text-primary">@skill.Level%</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: @(skill.Level)%" aria-valuenow="@skill.Level" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    <div class="ms-3 d-flex">
+                                        <button class="btn btn-sm btn-link text-info p-1" @onclick="() => OpenModal(skill)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-link text-danger p-1" @onclick="() => DeleteSkill(skill.Id)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (_showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow">
+                <div class="modal-header border-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold">@(_editingSkill.Id == 0 ? "Add New" : "Edit") Skill</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <EditForm Model="_editingSkill" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Skill Name</label>
+                            <InputText @bind-Value="_editingSkill.Name" class="form-control" placeholder="C#, Blazor, AWS" />
+                            <ValidationMessage For="() => _editingSkill.Name" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Category</label>
+                            <InputSelect @bind-Value="_editingSkill.Category" class="form-select">
+                                <option value="">Select Category</option>
+                                <option value="Languages">Languages</option>
+                                <option value="Frameworks">Frameworks</option>
+                                <option value="Tools & Platforms">Tools & Platforms</option>
+                                <option value="Databases">Databases</option>
+                                <option value="Other">Other</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => _editingSkill.Category" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Proficiency Level (@_editingSkill.Level%)</label>
+                            <input type="range" class="form-range" min="0" max="100" step="1" @bind="_editingSkill.Level" @bind:event="oninput" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Icon Class (Bootstrap Icons)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi @(string.IsNullOrEmpty(_editingSkill.IconClass) ? "bi-question-circle" : _editingSkill.IconClass)"></i></span>
+                                <InputText @bind-Value="_editingSkill.IconClass" class="form-control" placeholder="bi-code-slash" list="iconSuggestions" />
+                            </div>
+                            <div class="form-text mt-1 small">Common: bi-code-slash, bi-terminal, bi-database, bi-gear, bi-cloud</div>
+                            
+                            <datalist id="iconSuggestions">
+                                <option value="bi-code-slash" />
+                                <option value="bi-terminal" />
+                                <option value="bi-braces" />
+                                <option value="bi-window-code" />
+                                <option value="bi-database" />
+                                <option value="bi-server" />
+                                <option value="bi-layers" />
+                                <option value="bi-cpu" />
+                                <option value="bi-gear" />
+                                <option value="bi-cloud" />
+                                <option value="bi-globe" />
+                                <option value="bi-phone" />
+                                <option value="bi-laptop" />
+                                <option value="bi-git" />
+                                <option value="bi-github" />
+                                <option value="bi-puzzle" />
+                                <option value="bi-palette" />
+                                <option value="bi-lightning" />
+                                <option value="bi-stars" />
+                                <option value="bi-command" />
+                            </datalist>
+                        </div>
+                        
+                        <div class="modal-footer border-0 pb-0 px-0 mt-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@_submitting">
+                                @if (_submitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                Save Skill
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private Dictionary<string, List<Skill>>? _groupedSkills;
+    private bool _showModal;
+    private Skill _editingSkill = new() { Level = 50 };
+    private bool _submitting;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData() => _groupedSkills = await SkillService.GetGroupedByCategory();
+
+    private void OpenModal(Skill? skill = null)
+    {
+        if (skill != null)
+        {
+            _editingSkill = new Skill
+            {
+                Id = skill.Id,
+                Name = skill.Name,
+                Category = skill.Category,
+                Level = skill.Level,
+                IconClass = skill.IconClass
+            };
+        }
+        else
+        {
+            _editingSkill = new Skill { Level = 50 };
+        }
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+        _editingSkill = new() { Level = 50 };
+    }
+
+    private async Task HandleSubmit()
+    {
+        _submitting = true;
+        try
+        {
+            if (_editingSkill.Id == 0)
+                await SkillService.CreateAsync(_editingSkill);
+            else
+                await SkillService.UpdateAsync(_editingSkill);
+
+            Toast.ShowSuccess("Skill saved");
+            CloseModal();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError("Error: " + ex.Message);
+        }
+        finally { _submitting = false; }
+    }
+
+    private async Task DeleteSkill(int id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Delete this skill?"))
+        {
+            await SkillService.DeleteAsync(id);
+            Toast.ShowSuccess("Skill deleted");
+            await LoadData();
+        }
+    }
+
+    [Inject] IJSRuntime JS { get; set; } = default!;
+}

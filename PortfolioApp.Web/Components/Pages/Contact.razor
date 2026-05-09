@@ -1,0 +1,190 @@
+@page "/contact"
+@rendermode InteractiveServer
+@inject IMessageService MessageService
+@inject IUserProfileService ProfileService
+@inject IToastService Toast
+
+<PageTitle>Contact — Alex Morgan</PageTitle>
+<HeadContent>
+    <meta name="description" content="Get in touch with Alex Morgan." />
+</HeadContent>
+
+<div class="page-hero">
+    <div class="container">
+        <div class="section-tag">Get In Touch</div>
+        <h1 class="section-title mt-2">Contact Me</h1>
+        <p class="section-subtitle">I'm always open to new opportunities and conversations</p>
+    </div>
+</div>
+
+<section class="section-py">
+    <div class="container">
+        <div class="row g-5 justify-content-center">
+            <!-- Contact info -->
+            <div class="col-lg-4 fade-in-up">
+                <div class="mb-4">
+                    <h4 class="fw-bold mb-3">Let's talk</h4>
+                    <p class="text-secondary">Whether you have a project in mind, a job opportunity, or just want to say hello — my inbox is always open.</p>
+                </div>
+
+                @if (_profile is not null)
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @if (!string.IsNullOrEmpty(_profile.Email))
+                        {
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="qual-icon"><i class="bi bi-envelope-fill"></i></div>
+                                <div>
+                                    <div class="text-muted small">Email</div>
+                                    <a href="mailto:@_profile.Email" class="fw-semibold text-accent">@_profile.Email</a>
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_profile.Phone))
+                        {
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="qual-icon"><i class="bi bi-telephone-fill"></i></div>
+                                <div>
+                                    <div class="text-muted small">Phone</div>
+                                    <span class="fw-semibold">@_profile.Phone</span>
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_profile.Location))
+                        {
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="qual-icon"><i class="bi bi-geo-alt-fill"></i></div>
+                                <div>
+                                    <div class="text-muted small">Location</div>
+                                    <span class="fw-semibold">@_profile.Location</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        @if (!string.IsNullOrEmpty(_profile.GitHubUrl))
+                        {
+                            <a href="@_profile.GitHubUrl" target="_blank" class="social-btn" title="GitHub"><i class="bi bi-github"></i></a>
+                        }
+                        @if (!string.IsNullOrEmpty(_profile.LinkedInUrl))
+                        {
+                            <a href="@_profile.LinkedInUrl" target="_blank" class="social-btn" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                        }
+                        @if (!string.IsNullOrEmpty(_profile.TwitterUrl))
+                        {
+                            <a href="@_profile.TwitterUrl" target="_blank" class="social-btn" title="Twitter/X"><i class="bi bi-twitter-x"></i></a>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Contact form -->
+            <div class="col-lg-6 fade-in-up delay-2">
+                <div class="contact-card">
+                    @if (_sent)
+                    {
+                        <div class="text-center py-4">
+                            <div style="font-size:3.5rem;color:var(--success);" class="mb-3">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <h4 class="fw-bold mb-2">Message Sent!</h4>
+                            <p class="text-secondary mb-4">Thanks for reaching out. I'll get back to you as soon as possible.</p>
+                            <button class="btn btn-accent" @onclick="() => _sent = false">Send Another</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+                            <DataAnnotationsValidator />
+                            <h4 class="fw-bold mb-4">Send a Message</h4>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Your Name *</label>
+                                    <InputText class="form-control" @bind-Value="_model.Name" placeholder="John Doe" />
+                                    <ValidationMessage For="() => _model.Name" class="text-danger small mt-1" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email Address *</label>
+                                    <InputText class="form-control" @bind-Value="_model.Email" placeholder="john@example.com" />
+                                    <ValidationMessage For="() => _model.Email" class="text-danger small mt-1" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Subject</label>
+                                    <InputText class="form-control" @bind-Value="_model.Subject" placeholder="Project enquiry..." />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Message *</label>
+                                    <InputTextArea class="form-control" @bind-Value="_model.Content" rows="5" placeholder="Tell me about your project or opportunity..." />
+                                    <ValidationMessage For="() => _model.Content" class="text-danger small mt-1" />
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-accent w-100" disabled="@_submitting">
+                                        @if (_submitting)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                        }
+                                        <i class="bi bi-send me-2"></i>Send Message
+                                    </button>
+                                </div>
+                            </div>
+                        </EditForm>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private ContactModel _model = new();
+    private UserProfile? _profile;
+    private bool _submitting;
+    private bool _sent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _profile = await ProfileService.GetProfileAsync();
+    }
+
+    private async Task SubmitAsync()
+    {
+        _submitting = true;
+        try
+        {
+            await MessageService.CreateAsync(new Message
+            {
+                Name = _model.Name,
+                Email = _model.Email,
+                Subject = _model.Subject,
+                Content = _model.Content
+            });
+            _sent = true;
+            Toast.ShowSuccess("Message sent successfully!");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError("Failed to send message. Please try again.");
+            _ = ex;
+        }
+        finally { _submitting = false; }
+    }
+
+    private class ContactModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Name is required")]
+        [System.ComponentModel.DataAnnotations.MaxLength(200)]
+        public string Name { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Email is required")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Enter a valid email")]
+        public string Email { get; set; } = string.Empty;
+
+        public string Subject { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Message is required")]
+        [System.ComponentModel.DataAnnotations.MinLength(10, ErrorMessage = "Message must be at least 10 characters")]
+        public string Content { get; set; } = string.Empty;
+    }
+}

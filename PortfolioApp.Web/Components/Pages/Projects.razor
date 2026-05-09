@@ -1,0 +1,174 @@
+@page "/projects"
+@rendermode InteractiveServer
+@inject IProjectService ProjectService
+
+<PageTitle>Projects — Alex Morgan</PageTitle>
+<HeadContent>
+    <meta name="description" content="Portfolio projects built by Alex Morgan." />
+</HeadContent>
+
+<div class="page-hero">
+    <div class="container">
+        <div class="section-tag">Portfolio</div>
+        <h1 class="section-title mt-2">Projects</h1>
+        <p class="section-subtitle">Things I've built that I'm proud of</p>
+    </div>
+</div>
+
+<section class="section-py">
+    <div class="container">
+        <!-- Search & filter bar -->
+        <div class="d-flex flex-column flex-md-row gap-3 mb-5 align-items-md-center">
+            <div class="input-group" style="max-width:400px;">
+                <span class="input-group-text" style="background:var(--bg-card);border-color:var(--border-color);">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" class="form-control" placeholder="Search projects..."
+                       value="@_searchTerm" @oninput="OnSearch" />
+                @if (!string.IsNullOrEmpty(_searchTerm))
+                {
+                    <button class="btn btn-outline-secondary" @onclick="ClearSearch">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                }
+            </div>
+            <div class="text-muted small ms-auto">Showing @_projects.Count of @_totalCount projects</div>
+        </div>
+
+        @if (_loading)
+        {
+            <div class="loading-spinner"><div class="spinner-border text-accent"></div></div>
+        }
+        else if (!_projects.Any())
+        {
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-folder-x" style="font-size:3rem;opacity:.3;"></i>
+                <p class="mt-3">No projects found matching "@_searchTerm".</p>
+                <button class="btn btn-outline-accent mt-2" @onclick="ClearSearch">Clear Search</button>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var project in _projects)
+                {
+                    <div class="col-md-6 col-lg-4 fade-in-up">
+                        <div class="card project-card h-100" style="position:relative;">
+                            @if (project.IsFeatured)
+                            {
+                                <span class="featured-badge"><i class="bi bi-star-fill me-1"></i>Featured</span>
+                            }
+                            <div class="project-img">
+                                @if (!string.IsNullOrEmpty(project.ImageUrl))
+                                {
+                                    <img src="@project.ImageUrl" alt="@project.Title" class="w-100 h-100" style="object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-code-slash text-muted opacity-25"></i>
+                                }
+                            </div>
+                            <div class="card-body">
+                                <h5 class="fw-bold mb-2">@project.Title</h5>
+                                <p class="text-secondary small mb-3" style="flex:1;line-height:1.7;">@project.Description</p>
+                                <div class="mb-3">
+                                    @foreach (var tech in project.TechStack.Split(','))
+                                    {
+                                        <span class="tech-tag">@tech.Trim()</span>
+                                    }
+                                </div>
+                                <div class="d-flex gap-2 mt-auto pt-2">
+                                    @if (!string.IsNullOrEmpty(project.GitHubUrl))
+                                    {
+                                        <a href="@project.GitHubUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-github me-1"></i>Code
+                                        </a>
+                                    }
+                                    @if (!string.IsNullOrEmpty(project.DemoUrl))
+                                    {
+                                        <a href="@project.DemoUrl" target="_blank" class="btn btn-sm btn-accent">
+                                            <i class="bi bi-box-arrow-up-right me-1"></i>Demo
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Pagination -->
+            @if (_totalPages > 1)
+            {
+                <nav class="mt-5 d-flex justify-content-center" aria-label="Project pagination">
+                    <ul class="pagination">
+                        <li class="page-item @(_page == 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(_page - 1)">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+                        @for (int i = 1; i <= _totalPages; i++)
+                        {
+                            var p = i;
+                            <li class="page-item @(p == _page ? "active" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(p)">@p</button>
+                            </li>
+                        }
+                        <li class="page-item @(_page == _totalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(_page + 1)">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+    </div>
+</section>
+
+@code {
+    private List<Project> _projects = new();
+    private string _searchTerm = string.Empty;
+    private int _page = 1;
+    private const int PageSize = 6;
+    private int _totalCount;
+    private int _totalPages;
+    private bool _loading = true;
+    private System.Timers.Timer? _debounce;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _totalCount = await ProjectService.GetTotalCountAsync(_searchTerm);
+        _totalPages = (int)Math.Ceiling(_totalCount / (double)PageSize);
+        if (_page > _totalPages && _totalPages > 0) _page = 1;
+        _projects = await ProjectService.GetPagedAsync(_page, PageSize, _searchTerm);
+        _loading = false;
+    }
+
+    private void OnSearch(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value?.ToString() ?? string.Empty;
+        _page = 1;
+        _debounce?.Dispose();
+        _debounce = new System.Timers.Timer(350);
+        _debounce.Elapsed += async (_, _) => { _debounce?.Dispose(); await InvokeAsync(LoadAsync); await InvokeAsync(StateHasChanged); };
+        _debounce.AutoReset = false;
+        _debounce.Start();
+    }
+
+    private async Task ClearSearch()
+    {
+        _searchTerm = string.Empty;
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task GoToPage(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+}

@@ -1,0 +1,276 @@
+@page "/admin/projects"
+@layout Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject IProjectService ProjectService
+@inject IToastService Toast
+@inject IWebHostEnvironment Environment
+@rendermode InteractiveServer
+@using System.IO
+
+<PageTitle>Manage Projects</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold">Projects</h2>
+        <p class="text-muted">Showcase your best work and personal projects</p>
+    </div>
+    <button class="btn btn-primary rounded-pill px-4" @onclick="() => OpenModal()">
+        <i class="bi bi-plus-lg me-2"></i>Add Project
+    </button>
+</div>
+
+@if (_projects == null)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (!_projects.Any())
+{
+    <div class="card border-0 shadow-sm rounded-4 text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-grid text-muted fs-1"></i>
+            <p class="text-muted mt-3">No projects found.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var proj in _projects)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                    <div class="bg-light d-flex align-items-center justify-content-center border-bottom position-relative" style="height: 160px; overflow: hidden;">
+                        @if (!string.IsNullOrEmpty(proj.ImageUrl))
+                        {
+                            <img src="@proj.ImageUrl" alt="@proj.Title" class="w-100 h-100" style="object-fit: cover;" />
+                        }
+                        else
+                        {
+                            <i class="bi bi-image text-muted opacity-25" style="font-size: 4rem;"></i>
+                        }
+                        
+                        @if (proj.IsFeatured)
+                        {
+                            <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-3 rounded-pill shadow-sm">
+                                <i class="bi bi-star-fill me-1"></i>Featured
+                            </span>
+                        }
+                    </div>
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-2">@proj.Title</h5>
+                        <p class="text-muted small text-truncate mb-3">@proj.Description</p>
+                        <div class="d-flex flex-wrap gap-1 mb-4">
+                            @foreach (var tag in proj.TechStack.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <span class="badge bg-info bg-opacity-10 text-info small border-0">@tag.Trim()</span>
+                            }
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                            <div class="small text-muted">@proj.CreatedAt.ToString("MMM yyyy")</div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-info rounded-circle me-2" @onclick="() => OpenModal(proj)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger rounded-circle" @onclick="() => DeleteProject(proj.Id)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (_showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow">
+                <div class="modal-header border-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold">@(_editingProj.Id == 0 ? "Add New" : "Edit") Project</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <EditForm Model="_editingProj" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold">Project Title</label>
+                                <InputText @bind-Value="_editingProj.Title" class="form-control" placeholder="E-commerce Platform" />
+                                <ValidationMessage For="() => _editingProj.Title" class="text-danger small" />
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <InputCheckbox @bind-Value="_editingProj.IsFeatured" class="form-check-input" id="isFeatured" />
+                                    <label class="form-check-label" for="isFeatured">Featured Project</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Tech Stack (comma separated)</label>
+                                <InputText @bind-Value="_editingProj.TechStack" class="form-control" placeholder=".NET, Blazor, SQL Server" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">GitHub URL</label>
+                                <InputText @bind-Value="_editingProj.GitHubUrl" class="form-control" placeholder="https://github.com/..." />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Demo URL</label>
+                                <InputText @bind-Value="_editingProj.DemoUrl" class="form-control" placeholder="https://demo.com" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Description</label>
+                                <InputTextArea @bind-Value="_editingProj.Description" class="form-control" rows="4" />
+                            </div>
+                             <div class="col-12">
+                                <label class="form-label fw-semibold">Project Preview Image</label>
+                                <div class="d-flex align-items-center gap-3 mt-1">
+                                    @if (!string.IsNullOrEmpty(_editingProj.ImageUrl))
+                                    {
+                                        <div class="position-relative">
+                                            <img src="@_editingProj.ImageUrl" class="rounded-3 shadow-sm" style="width: 120px; height: 75px; object-fit: cover;" />
+                                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 p-1" 
+                                                    style="transform: translate(50%, -50%); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" 
+                                                    @onclick="() => _editingProj.ImageUrl = null">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-light rounded-3 d-flex align-items-center justify-content-center text-muted border border-dashed" style="width: 120px; height: 75px;">
+                                            <i class="bi bi-image fs-3"></i>
+                                        </div>
+                                    }
+                                    <div class="flex-grow-1">
+                                        <InputFile OnChange="HandleFileSelected" class="@($"form-control {(string.IsNullOrEmpty(_editingProj.ImageUrl) ? "" : "is-valid")}")" accept=".jpg,.jpeg,.png,.webp" />
+                                        <div class="form-text small mt-1">Recommended: 800x500px, Max 5MB</div>
+                                        <ValidationMessage For="() => _editingProj.ImageUrl" class="text-danger small" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pb-4 px-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@_submitting">
+                                @if (_submitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                Save Project
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Project>? _projects;
+    private bool _showModal;
+    private Project _editingProj = new();
+    private bool _submitting;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData() => _projects = await ProjectService.GetAllAsync();
+
+    private void OpenModal(Project? proj = null)
+    {
+        if (proj != null)
+        {
+            _editingProj = new Project
+            {
+                Id = proj.Id,
+                Title = proj.Title,
+                Description = proj.Description,
+                TechStack = proj.TechStack,
+                GitHubUrl = proj.GitHubUrl,
+                DemoUrl = proj.DemoUrl,
+                ImageUrl = proj.ImageUrl,
+                IsFeatured = proj.IsFeatured,
+                CreatedAt = proj.CreatedAt
+            };
+        }
+        else
+        {
+            _editingProj = new Project { CreatedAt = DateTime.Today };
+        }
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+        _editingProj = new();
+    }
+
+    private async Task HandleSubmit()
+    {
+        _submitting = true;
+        try
+        {
+            if (_editingProj.Id == 0)
+                await ProjectService.CreateAsync(_editingProj);
+            else
+                await ProjectService.UpdateAsync(_editingProj);
+
+            Toast.ShowSuccess("Project saved successfully");
+            CloseModal();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError("Error: " + ex.Message);
+        }
+        finally { _submitting = false; }
+    }
+
+    private async Task DeleteProject(int id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Delete this project?"))
+        {
+            await ProjectService.DeleteAsync(id);
+            Toast.ShowSuccess("Project removed");
+            await LoadData();
+        }
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            try
+            {
+                var extension = Path.GetExtension(file.Name);
+                var fileName = $"{Guid.NewGuid()}{extension}";
+                var uploadPath = Path.Combine(Environment.WebRootPath, "uploads", "projects");
+                
+                if (!Directory.Exists(uploadPath))
+                    Directory.CreateDirectory(uploadPath);
+
+                var fullPath = Path.Combine(uploadPath, fileName);
+                
+                // 5MB max
+                await using var stream = file.OpenReadStream(5 * 1024 * 1024);
+                await using var fs = new FileStream(fullPath, FileMode.Create);
+                await stream.CopyToAsync(fs);
+
+                _editingProj.ImageUrl = $"/uploads/projects/{fileName}";
+                Toast.ShowInfo("Image uploaded successfully");
+            }
+            catch (Exception ex)
+            {
+                Toast.ShowError("Upload failed: " + ex.Message);
+            }
+        }
+    }
+
+    [Inject] IJSRuntime JS { get; set; } = default!;
+}

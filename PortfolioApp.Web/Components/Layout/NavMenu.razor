@@ -1,0 +1,49 @@
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand" href="/">{ Codeit }</a>
+
+        <div class="d-flex align-items-center gap-2 order-lg-3">
+            <button class="dark-toggle" @onclick="ToggleDarkMode" title="Toggle dark mode">
+                <i class="bi @(_isDark ? "bi-sun-fill" : "bi-moon-stars-fill")"></i>
+            </button>
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+
+        <div class="collapse navbar-collapse order-lg-2" id="navMain">
+            <ul class="navbar-nav ms-auto gap-1">
+                <li class="nav-item"><NavLink class="nav-link" href="/" Match="NavLinkMatch.All"><i class="bi bi-house-door me-1"></i>Home</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/cv"><i class="bi bi-file-text me-1"></i>CV</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/skills"><i class="bi bi-lightning me-1"></i>Skills</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/experience"><i class="bi bi-briefcase me-1"></i>Experience</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/qualifications"><i class="bi bi-mortarboard me-1"></i>Qualifications</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/projects"><i class="bi bi-grid me-1"></i>Projects</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/contact"><i class="bi bi-envelope me-1"></i>Contact</NavLink></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+@code {
+    private bool _isDark;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isDark = await JS.InvokeAsync<bool>("isDarkMode");
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        _isDark = !_isDark;
+        await JS.InvokeVoidAsync("toggleDarkMode", _isDark);
+    }
+}

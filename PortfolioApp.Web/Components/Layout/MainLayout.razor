@@ -1,0 +1,38 @@
+@inherits LayoutComponentBase
+@using Blazored.Toast.Configuration
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<BlazoredToasts Position="ToastPosition.BottomRight" Timeout="4" IconType="IconType.FontAwesome" />
+
+<div class="d-flex flex-column" style="min-height:100vh;">
+    <NavMenu />
+
+    <main class="flex-grow-1">
+        @Body
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+                <div>
+                    <span class="fw-bold text-accent">{ Portfolio }</span>
+                    <span class="text-muted ms-2 small">Built with Blazor &amp; ❤️</span>
+                </div>
+                <p class="text-muted small mb-0">© @DateTime.UtcNow.Year Alex Morgan. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- Scroll-to-top button -->
+<button id="scrollTop" class="btn btn-accent d-none" style="position:fixed;bottom:2rem;right:2rem;z-index:999;border-radius:50%;width:48px;height:48px;padding:0;display:flex!important;align-items:center;justify-content:center;" onclick="scrollToTop()">
+    <i class="bi bi-arrow-up"></i>
+</button>
+
+<script>
+    window.addEventListener('scroll', function() {
+        var btn = document.getElementById('scrollTop');
+        if (btn) btn.classList.toggle('d-none', window.scrollY < 400);
+    });
+</script>

@@ -1,0 +1,188 @@
+@page "/admin/profile"
+@layout Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject IUserProfileService ProfileService
+@inject IToastService Toast
+@inject IWebHostEnvironment Environment
+@rendermode InteractiveServer
+@using System.IO
+
+<PageTitle>Manage Profile</PageTitle>
+
+<div class="mb-4">
+    <h2 class="fw-bold">Profile Management</h2>
+    <p class="text-muted">Update your personal information and contact details</p>
+</div>
+
+@if (_profile == null)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-5">
+            <EditForm Model="_profile" OnValidSubmit="SaveProfile" FormName="profileForm">
+                
+                <DataAnnotationsValidator />
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Full Name</label>
+                        <InputText @bind-Value="_profile.FullName" class="form-control" placeholder="Alex Morgan" />
+                        <ValidationMessage For="() => _profile.FullName" class="text-danger small mt-1" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Job Title</label>
+                        <InputText @bind-Value="_profile.Title" class="form-control" placeholder="Full Stack Developer" />
+                        <ValidationMessage For="() => _profile.Title" class="text-danger small mt-1" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Email Address</label>
+                        <InputText @bind-Value="_profile.Email" class="form-control" placeholder="alex@example.com" />
+                        <ValidationMessage For="() => _profile.Email" class="text-danger small mt-1" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Phone Number</label>
+                        <InputText @bind-Value="_profile.Phone" class="form-control" placeholder="+1 234 567 890" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Location</label>
+                        <InputText @bind-Value="_profile.Location" class="form-control" placeholder="London, UK" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Profile Image</label>
+                        <div class="d-flex align-items-center gap-3">
+                            @if (!string.IsNullOrEmpty(_profile.ProfileImageUrl))
+                            {
+                                <img src="@_profile.ProfileImageUrl" class="rounded-circle shadow-sm" style="width: 64px; height: 64px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-muted" style="width: 64px; height: 64px; border: 2px dashed #ccc;">
+                                    <i class="bi bi-person fs-3"></i>
+                                </div>
+                            }
+                            <div class="flex-grow-1">
+                                <InputFile OnChange="HandleProfileImageUpload" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp" />
+                                <div class="form-text small">Max 2MB (JPG, PNG)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">GitHub URL</label>
+                        <InputText @bind-Value="_profile.GitHubUrl" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">LinkedIn URL</label>
+                        <InputText @bind-Value="_profile.LinkedInUrl" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Twitter URL</label>
+                        <InputText @bind-Value="_profile.TwitterUrl" class="form-control" />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Short Bio (Hero Section)</label>
+                        <InputTextArea @bind-Value="_profile.Bio" class="form-control" rows="3" placeholder="A brief introduction..." />
+                        <ValidationMessage For="() => _profile.Bio" class="text-danger small mt-1" />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Detailed Summary (CV Page)</label>
+                        <InputTextArea @bind-Value="_profile.Summary" class="form-control" rows="5" placeholder="More detailed professional summary..." />
+                        <ValidationMessage For="() => _profile.Summary" class="text-danger small mt-1" />
+                    </div>
+
+                    <div class="col-12 mt-5">
+                        <hr class="mb-4" />
+                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-pill" disabled="@_saving">
+                            @if (_saving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                <span>Saving Changes...</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-save-fill me-2"></i><span>Save Profile</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private UserProfile? _profile;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _profile = await ProfileService.GetProfileAsync();
+        if (_profile == null)
+        {
+            _profile = new UserProfile();
+        }
+    }
+
+    private async Task SaveProfile()
+    {
+        if (_profile == null) return;
+        
+        _saving = true;
+        try
+        {
+            await ProfileService.UpsertProfileAsync(_profile);
+            Toast.ShowSuccess("Profile updated successfully!");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError("Failed to update profile: " + ex.Message);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+    private async Task HandleProfileImageUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            try
+            {
+                var extension = Path.GetExtension(file.Name);
+                var fileName = $"profile_{Guid.NewGuid()}{extension}";
+                var uploadPath = Path.Combine(Environment.WebRootPath, "uploads", "profile");
+
+                if (!Directory.Exists(uploadPath))
+                    Directory.CreateDirectory(uploadPath);
+
+                var fullPath = Path.Combine(uploadPath, fileName);
+
+                await using var stream = file.OpenReadStream(2 * 1024 * 1024); // 2MB
+                await using var fs = new FileStream(fullPath, FileMode.Create);
+                await stream.CopyToAsync(fs);
+
+                _profile.ProfileImageUrl = $"/uploads/profile/{fileName}";
+                Toast.ShowInfo("Profile image uploaded");
+            }
+            catch (Exception ex)
+            {
+                Toast.ShowError("Upload failed: " + ex.Message);
+            }
+        }
+    }
+}

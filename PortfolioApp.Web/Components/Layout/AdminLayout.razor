@@ -1,0 +1,44 @@
+@inherits LayoutComponentBase
+@using Blazored.Toast.Configuration
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthProvider
+
+<BlazoredToasts Position="ToastPosition.BottomRight" Timeout="4" />
+
+<div class="d-flex" style="min-height:100vh;">
+    <nav class="admin-sidebar d-none d-lg-flex flex-column">
+        <div class="mb-4">
+            <a href="/" class="text-decoration-none">
+                <span class="fw-bold text-accent" style="font-size:1.1rem;">{ Portfolio }</span>
+            </a>
+            <div class="text-muted small mt-1">Admin Panel</div>
+        </div>
+
+        <div class="flex-grow-1">
+            <div class="text-muted small fw-semibold mb-2 px-2" style="letter-spacing:.08em;font-size:.72rem;text-transform:uppercase;">Content</div>
+            <NavLink class="admin-nav-link" href="/admin" Match="NavLinkMatch.All"><i class="bi bi-speedometer2"></i> Dashboard</NavLink>
+            <NavLink class="admin-nav-link" href="/admin/profile"><i class="bi bi-person-circle"></i> Profile</NavLink>
+            <NavLink class="admin-nav-link" href="/admin/experience"><i class="bi bi-briefcase"></i> Experience</NavLink>
+            <NavLink class="admin-nav-link" href="/admin/qualifications"><i class="bi bi-mortarboard"></i> Qualifications</NavLink>
+            <NavLink class="admin-nav-link" href="/admin/skills"><i class="bi bi-lightning"></i> Skills</NavLink>
+            <NavLink class="admin-nav-link" href="/admin/projects"><i class="bi bi-grid"></i> Projects</NavLink>
+
+            <div class="text-muted small fw-semibold mt-3 mb-2 px-2" style="letter-spacing:.08em;font-size:.72rem;text-transform:uppercase;">Inbox</div>
+            <NavLink class="admin-nav-link" href="/admin/messages"><i class="bi bi-envelope"></i> Messages</NavLink>
+        </div>
+
+        <div class="border-top pt-3 mt-3" style="border-color:var(--border-color)!important;">
+            <a href="/" class="admin-nav-link"><i class="bi bi-house"></i> View Site</a>
+            <form method="post" action="/admin/logout">
+                <AntiforgeryToken />
+                <button type="submit" class="admin-nav-link border-0 w-100 text-start" style="background:none;">
+                    <i class="bi bi-box-arrow-right"></i> Sign Out
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <main class="admin-main flex-grow-1">
+        @Body
+    </main>
+</div>

@@ -1,0 +1,196 @@
+@page "/admin/qualifications"
+@layout Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject IQualificationService QualificationService
+@inject IToastService Toast
+@rendermode InteractiveServer
+
+<PageTitle>Manage Qualifications</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold">Qualifications</h2>
+        <p class="text-muted">Manage your educational background and certifications</p>
+    </div>
+    <button class="btn btn-primary rounded-pill px-4" @onclick="() => OpenModal()">
+        <i class="bi bi-plus-lg me-2"></i>Add Qualification
+    </button>
+</div>
+
+@if (_qualifications == null)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (!_qualifications.Any())
+{
+    <div class="card border-0 shadow-sm rounded-4 text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-mortarboard text-muted fs-1"></i>
+            <p class="text-muted mt-3">No qualifications recorded.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Title</th>
+                        <th>Institution</th>
+                        <th>Year</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var qual in _qualifications)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold">@qual.Title</div>
+                                <div class="text-muted small">@qual.Grade</div>
+                            </td>
+                            <td>@qual.Institution</td>
+                            <td>@qual.Year</td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-info me-2" @onclick="() => OpenModal(qual)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteQualification(qual.Id)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow">
+                <div class="modal-header border-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold">@(_editingQual.Id == 0 ? "Add New" : "Edit") Qualification</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <EditForm Model="_editingQual" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Title</label>
+                                <InputText @bind-Value="_editingQual.Title" class="form-control" placeholder="BSc Computer Science" />
+                                <ValidationMessage For="() => _editingQual.Title" class="text-danger small" />
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold">Institution</label>
+                                <InputText @bind-Value="_editingQual.Institution" class="form-control" />
+                                <ValidationMessage For="() => _editingQual.Institution" class="text-danger small" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Year</label>
+                                <InputNumber @bind-Value="_editingQual.Year" class="form-control" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Grade / Score</label>
+                                <InputText @bind-Value="_editingQual.Grade" class="form-control" placeholder="First Class Honours / 4.0 GPA" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Description</label>
+                                <InputTextArea @bind-Value="_editingQual.Description" class="form-control" rows="3" />
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pb-4 px-4 mt-3">
+                            <button type="button" class="btn btn-light rounded-pill px-4" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@_submitting">
+                                @if (_submitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                Save Qualification
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Qualification>? _qualifications;
+    private bool _showModal;
+    private Qualification _editingQual = new() { Year = DateTime.Now.Year };
+    private bool _submitting;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData() => _qualifications = await QualificationService.GetAllAsync();
+
+    private void OpenModal(Qualification? qual = null)
+    {
+        if (qual != null)
+        {
+            _editingQual = new Qualification
+            {
+                Id = qual.Id,
+                Title = qual.Title,
+                Institution = qual.Institution,
+                Year = qual.Year,
+                Grade = qual.Grade,
+                Description = qual.Description
+            };
+        }
+        else
+        {
+            _editingQual = new Qualification { Year = DateTime.Now.Year };
+        }
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+        _editingQual = new() { Year = DateTime.Now.Year };
+    }
+
+    private async Task HandleSubmit()
+    {
+        _submitting = true;
+        try
+        {
+            if (_editingQual.Id == 0)
+                await QualificationService.CreateAsync(_editingQual);
+            else
+                await QualificationService.UpdateAsync(_editingQual);
+
+            Toast.ShowSuccess("Qualification saved");
+            CloseModal();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError("Error: " + ex.Message);
+        }
+        finally { _submitting = false; }
+    }
+
+    private async Task DeleteQualification(int id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Delete this qualification?"))
+        {
+            await QualificationService.DeleteAsync(id);
+            Toast.ShowSuccess("Qualification deleted");
+            await LoadData();
+        }
+    }
+
+    [Inject] IJSRuntime JS { get; set; } = default!;
+}

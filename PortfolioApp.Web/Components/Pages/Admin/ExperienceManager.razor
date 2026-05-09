@@ -1,0 +1,212 @@
+@page "/admin/experience"
+@layout Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject IExperienceService ExperienceService
+@inject IToastService Toast
+@rendermode InteractiveServer
+
+<PageTitle>Manage Experience</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold">Experience</h2>
+        <p class="text-muted">Manage your professional work history</p>
+    </div>
+    <button class="btn btn-primary rounded-pill px-4" @onclick="() => OpenModal()">
+        <i class="bi bi-plus-lg me-2"></i>Add Experience
+    </button>
+</div>
+
+@if (_experiences == null)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (!_experiences.Any())
+{
+    <div class="card border-0 shadow-sm rounded-4 text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-briefcase text-muted fs-1"></i>
+            <p class="text-muted mt-3">No experience records found.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Company</th>
+                        <th>Role</th>
+                        <th>Duration</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var exp in _experiences)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold">@exp.Company</div>
+                                <div class="text-muted small">@exp.Location</div>
+                            </td>
+                            <td>@exp.Role</td>
+                            <td>
+                                <span class="small">
+                                    @exp.StartDate.ToString("MMM yyyy") - @(exp.IsCurrent ? "Present" : exp.EndDate?.ToString("MMM yyyy"))
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-info me-2" @onclick="() => OpenModal(exp)">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteExperience(exp.Id)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow">
+                <div class="modal-header border-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold">@(_editingExp.Id == 0 ? "Add New" : "Edit") Experience</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <EditForm Model="_editingExp" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Company Name</label>
+                                <InputText @bind-Value="_editingExp.Company" class="form-control" />
+                                <ValidationMessage For="() => _editingExp.Company" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Role</label>
+                                <InputText @bind-Value="_editingExp.Role" class="form-control" />
+                                <ValidationMessage For="() => _editingExp.Role" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Start Date</label>
+                                <InputDate @bind-Value="_editingExp.StartDate" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">End Date</label>
+                                <InputDate @bind-Value="_editingExp.EndDate" class="form-control" disabled="@_editingExp.IsCurrent" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check mb-3">
+                                    <InputCheckbox @bind-Value="_editingExp.IsCurrent" class="form-check-input" id="isCurrent" />
+                                    <label class="form-check-label" for="isCurrent">I am currently working here</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Location</label>
+                                <InputText @bind-Value="_editingExp.Location" class="form-control" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Description</label>
+                                <InputTextArea @bind-Value="_editingExp.Description" class="form-control" rows="4" />
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pb-4 px-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@_submitting">
+                                @if (_submitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                Save Experience
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<PortfolioApp.Domain.Entities.Experience>? _experiences;
+    private bool _showModal;
+    private PortfolioApp.Domain.Entities.Experience _editingExp = new();
+    private bool _submitting;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData() => _experiences = await ExperienceService.GetAllAsync();
+
+    private void OpenModal(PortfolioApp.Domain.Entities.Experience? exp = null)
+    {
+        if (exp != null)
+        {
+            _editingExp = new PortfolioApp.Domain.Entities.Experience
+            {
+                Id = exp.Id,
+                Company = exp.Company,
+                Role = exp.Role,
+                Description = exp.Description,
+                Location = exp.Location,
+                StartDate = exp.StartDate,
+                EndDate = exp.EndDate,
+                IsCurrent = exp.IsCurrent
+            };
+        }
+        else
+        {
+            _editingExp = new PortfolioApp.Domain.Entities.Experience { StartDate = DateTime.Today };
+        }
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+        _editingExp = new();
+    }
+
+    private async Task HandleSubmit()
+    {
+        _submitting = true;
+        try
+        {
+            if (_editingExp.Id == 0)
+                await ExperienceService.CreateAsync(_editingExp);
+            else
+                await ExperienceService.UpdateAsync(_editingExp);
+
+            Toast.ShowSuccess("Experience saved successfully");
+            CloseModal();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError("Error: " + ex.Message);
+        }
+        finally { _submitting = false; }
+    }
+
+    private async Task DeleteExperience(int id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this experience?"))
+        {
+            await ExperienceService.DeleteAsync(id);
+            Toast.ShowSuccess("Experience deleted");
+            await LoadData();
+        }
+    }
+
+    [Inject] IJSRuntime JS { get; set; } = default!;
+}

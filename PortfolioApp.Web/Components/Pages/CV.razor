@@ -1,0 +1,142 @@
+@page "/cv"
+@rendermode InteractiveServer
+@inject IUserProfileService ProfileService
+@inject IExperienceService ExperienceService
+@inject IQualificationService QualService
+@inject IJSRuntime JS
+
+<PageTitle>CV / Resume — Alex Morgan</PageTitle>
+<HeadContent>
+    <meta name="description" content="Full curriculum vitae of Alex Morgan — Senior Full Stack Developer." />
+</HeadContent>
+
+<div class="page-hero">
+    <div class="container">
+        <div class="section-tag">Résumé</div>
+        <h1 class="section-title mt-2">Curriculum Vitae</h1>
+        <p class="section-subtitle">My professional journey, all in one place</p>
+        <a href="@(_profile?.CvFileUrl ?? "#")" download class="btn btn-accent mt-3">
+            <i class="bi bi-download me-2"></i>Download PDF
+        </a>
+        <button class="btn btn-outline-accent ms-2 mt-3" @onclick='() => JS.InvokeVoidAsync("print")'>
+            <i class="bi bi-printer me-2"></i>Print
+        </button>
+    </div>
+</div>
+
+<section class="section-py">
+    <div class="container">
+        @if (_loading)
+        {
+            <div class="loading-spinner"><div class="spinner-border text-accent"></div></div>
+        }
+        else
+        {
+            <div class="cv-print-area">
+                <!-- Header -->
+                <div class="d-flex flex-column flex-md-row align-items-center gap-4 mb-4 pb-4" style="border-bottom:2px solid var(--border-color);">
+                    <img src="@_profile?.ProfileImageUrl" alt="@_profile?.FullName"
+                         style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--accent);"
+                         onerror="this.src='https://ui-avatars.com/api/?name=@Uri.EscapeDataString(_profile?.FullName ?? "AM")&size=100&background=6c63ff&color=fff&bold=true'" />
+                    <div>
+                        <h2 class="mb-1">@_profile?.FullName</h2>
+                        <div class="text-accent fw-600 fs-5">@_profile?.Title</div>
+                        <div class="d-flex flex-wrap gap-3 mt-2 text-muted small">
+                            @if (!string.IsNullOrEmpty(_profile?.Email))
+                            {
+                                <span><i class="bi bi-envelope me-1"></i>@_profile.Email</span>
+                            }
+                            @if (!string.IsNullOrEmpty(_profile?.Phone))
+                            {
+                                <span><i class="bi bi-telephone me-1"></i>@_profile.Phone</span>
+                            }
+                            @if (!string.IsNullOrEmpty(_profile?.Location))
+                            {
+                                <span><i class="bi bi-geo-alt me-1"></i>@_profile.Location</span>
+                            }
+                            @if (!string.IsNullOrEmpty(_profile?.GitHubUrl))
+                            {
+                                <span><i class="bi bi-github me-1"></i>GitHub</span>
+                            }
+                            @if (!string.IsNullOrEmpty(_profile?.LinkedInUrl))
+                            {
+                                <span><i class="bi bi-linkedin me-1"></i>LinkedIn</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                @if (!string.IsNullOrEmpty(_profile?.Summary))
+                {
+                    <div class="mb-4">
+                        <div class="cv-section-title"><i class="bi bi-person-lines-fill me-2"></i>Professional Summary</div>
+                        <p class="text-secondary">@_profile.Summary</p>
+                    </div>
+                }
+
+                <!-- Experience -->
+                <div class="mb-4">
+                    <div class="cv-section-title"><i class="bi bi-briefcase me-2"></i>Work Experience</div>
+                    @foreach (var exp in _experiences)
+                    {
+                        <div class="mb-3 pb-3" style="border-bottom:1px solid var(--border-color);">
+                            <div class="d-flex justify-content-between flex-wrap gap-1 mb-1">
+                                <div>
+                                    <span class="fw-700">@exp.Role</span>
+                                    <span class="text-accent ms-2">@@ @exp.Company</span>
+                                </div>
+                                <span class="text-muted small">
+                                    @exp.StartDate.ToString("MMM yyyy") — @(exp.IsCurrent ? "Present" : exp.EndDate?.ToString("MMM yyyy"))
+                                </span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(exp.Location))
+                            {
+                                <div class="text-muted small mb-1"><i class="bi bi-geo-alt me-1"></i>@exp.Location</div>
+                            }
+                            <p class="text-secondary mb-0 small">@exp.Description</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Qualifications -->
+                <div>
+                    <div class="cv-section-title"><i class="bi bi-mortarboard me-2"></i>Education &amp; Certifications</div>
+                    @foreach (var qual in _qualifications)
+                    {
+                        <div class="mb-3 pb-3" style="border-bottom:1px solid var(--border-color);">
+                            <div class="d-flex justify-content-between flex-wrap gap-1 mb-1">
+                                <span class="fw-700">@qual.Title</span>
+                                <span class="badge" style="background:var(--accent-glow);color:var(--accent);">@qual.Year</span>
+                            </div>
+                            <div class="text-accent small">@qual.Institution</div>
+                            @if (!string.IsNullOrEmpty(qual.Grade))
+                            {
+                                <div class="text-muted small">Grade: @qual.Grade</div>
+                            }
+                            @if (!string.IsNullOrEmpty(qual.Description))
+                            {
+                                <p class="text-secondary small mb-0 mt-1">@qual.Description</p>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private UserProfile? _profile;
+    private List<PortfolioApp.Domain.Entities.Experience> _experiences = new();
+    private List<Qualification> _qualifications = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _profile = await ProfileService.GetProfileAsync();
+        _experiences = await ExperienceService.GetAllAsync();
+        _qualifications = await QualService.GetAllAsync();
+        _loading = false;
+    }
+}
