@@ -1,127 +1,162 @@
 # 🚀 PortfolioApp - Modern Developer Portfolio
 
-[![.NET Core](https://img.shields.io/badge/.NET-9.0-512bd4.svg)](https://dotnet.microsoft.com/download)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512bd4.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Blazor](https://img.shields.io/badge/Blazor-Server-512bd4.svg)](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003b57.svg)](https://www.sqlite.org/index.html)
 
-A feature-rich, production-ready portfolio management system built with **Blazor Server** and **Clean Architecture**. This application allows developers to showcase their professional journey, projects, and skills through a beautiful, responsive interface, while providing a robust administrative backend for content management.
+A portfolio site with a built-in admin panel, built with **Blazor Server** and **Clean Architecture**. Visitors see your profile, experience, skills, projects, qualifications and CV; you manage all of it from `/admin`.
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
-### 🌐 Public Portfolio
-- **Dynamic Homepage**: Professional hero section with a summary of expertise.
-- **Experience Timeline**: Detailed professional history with company roles and achievements.
-- **Skill Matrix**: Categorized skills (Languages, Frameworks, Tools) with proficiency levels.
-- **Project Showcase**: Filterable project gallery with technical stack details and live/GitHub links.
-- **Qualifications**: Educational background and certifications.
-- **Contact Form**: Secure messaging system for potential collaborators/employers.
-- **CV Access**: Integrated CV view and download functionality.
+### 🌐 Public site
+- **Home**: hero section, stats computed from your content (years of experience, projects, technologies, companies) and featured projects.
+- **Experience timeline**, **skill matrix** (by category, with proficiency levels) and **qualifications**.
+- **Projects**: paged, case-insensitive search across title, description and tech stack.
+- **CV page**: printable, with a PDF download when you've uploaded one.
+- **Contact form**: messages go to the admin inbox, with optional email notification. Spam protection includes a honeypot field, a minimum fill time and per-sender and global hourly limits.
+- Dark/light mode, page titles and descriptions driven by your profile, and a custom 404 page.
 
-### 🔐 Admin Dashboard
-- **Content Management System (CMS)**: CRUD operations for all portfolio sections.
-- **Project Manager**: Upload project images, manage descriptions, and tech stacks.
-- **Profile Customization**: Update bio, social links, and contact information in real-time.
-- **Message Inbox**: View and manage inquiries received through the contact form.
-- **Skill & Experience Editor**: Keep your professional growth updated with ease.
-- **Secure Authentication**: Built with ASP.NET Core Identity.
+### 🔐 Admin panel (`/admin`)
+- Manage the profile (including the profile photo and CV PDF), experience, qualifications, skills and projects.
+- **Message inbox**: read/unread state, reply by email, delete.
+- **Account & Password**: change your password and see which sign-in providers are linked.
+- Works on mobile, with a collapsible menu.
+- Uploads are checked on the server by file signature (JPG/PNG/WebP images, PDF for the CV). Replaced or abandoned uploads are deleted automatically.
+- Login lockout: 5 failed attempts lock the account for 15 minutes.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Framework**: .NET 9.0 (ASP.NET Core)
-- **Frontend**: Blazor Server, HTML5, Vanilla CSS, Bootstrap 5
-- **Data Access**: Entity Framework Core (EF Core)
-- **Database**: SQLite (Perfect for portability and low-latency)
-- **Architecture**: Clean Architecture (Domain-Driven Design)
-- **UI Components**: Blazored.Toast (for notifications), Bootstrap Icons
-
----
+- **.NET 8** (ASP.NET Core, Blazor Server with interactive server rendering)
+- **Entity Framework Core 8** + **SQLite**
+- **ASP.NET Core Identity** (optional Google / GitHub sign-in)
+- Bootstrap 5, Bootstrap Icons, Blazored.Toast
+- xUnit tests
 
 ## 🏗️ Project Structure
 
-The solution follows a multi-layered **Clean Architecture** pattern to ensure scalability and maintainability:
-
-- **`PortfolioApp.Domain`**: Core entities, value objects, and domain logic.
-- **`PortfolioApp.Application`**: Business logic, interfaces, and service definitions.
-- **`PortfolioApp.Infrastructure`**: External concerns like database context, migrations, and service implementations.
-- **`PortfolioApp.Web`**: The Blazor Server UI, components, and application entry point.
+| Project | Purpose |
+|---|---|
+| `PortfolioApp.Domain` | Entities and their validation rules |
+| `PortfolioApp.Application` | Service interfaces |
+| `PortfolioApp.Infrastructure` | EF Core context, migrations, seeding, service implementations, SMTP notifier |
+| `PortfolioApp.Web` | Blazor UI, auth endpoints, file storage |
+| `PortfolioApp.Tests` | Unit and integration tests (in-memory SQLite) |
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- [Visual Studio 2022](https://visualstudio.microsoft.com/vs/) (or VS Code / JetBrains Rider)
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or newer
 
-### Installation & Setup
+### Run locally
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/Codeit951/PortfolioApp.git
-   cd PortfolioApp
-   ```
+```bash
+git clone https://github.com/Codeit951/PortfolioApp.git
+cd PortfolioApp
+dotnet restore
 
-2. **Restore dependencies**:
-   ```bash
-   dotnet restore
-   ```
+# Choose the admin account's initial password (stored outside the repo):
+dotnet user-secrets --project PortfolioApp.Web set "AdminUser:Password" "Your!StrongPassw0rd"
 
-3. **Initialize the Database**:
-   The application uses a self-seeding mechanism. On the first run, it will automatically create the SQLite database (`portfolio.db`) and seed initial data.
+dotnet run --project PortfolioApp.Web
+```
 
-4. **Run the application**:
-   ```bash
-   dotnet run --project PortfolioApp.Web
-   ```
+On first run the app creates the SQLite database at `PortfolioApp.Web/App_Data/portfolio.db`, applies migrations and seeds **sample content**. Replace that content from the admin panel.
 
-5. **Access the app**:
-   Open your browser and navigate to `https://localhost:5001` (or the port shown in your terminal).
+### 🔑 Admin access
 
-### 🔑 Admin Access
-To access the admin dashboard, navigate to `/admin/login`. 
+Sign in at `/admin/login` with the email in `AdminUser:Email` (default `admin@codeit.com.ng` in `appsettings.json`) and the password you set.
 
-**Default Credentials (from Seeder):**
-- **Email**: `admin@codeit.com.ng`
-- **Password**: `admin@123`
+- The admin account is created **only when no admin exists yet**. Changing the settings later never changes an existing account.
+- If `AdminUser:Password` is empty, a random password is generated and printed **once** in the startup log.
+- Change your password anytime at **`/admin/account`**.
 
-> [!IMPORTANT]
-> For security, please change the default credentials immediately after your first login via the Profile Manager.
+No credentials are stored in source control. Keep secrets in user-secrets locally and in environment variables in production (for example `AdminUser__Password`).
 
 ---
 
-## 🛡️ Authentication Configuration
+## ⚙️ Configuration
 
-### Social Login (Optional)
-The project is structured to support **Google** and **GitHub** authentication. To enable them:
-1. Register your application in the [Google Cloud Console](https://console.cloud.google.com/) and [GitHub Developer Settings](https://github.com/settings/developers).
-2. Add your Client IDs and Secrets to `appsettings.json` or use Secret Manager:
-   ```json
-   "Authentication": {
-     "Google": { "ClientId": "...", "ClientSecret": "..." },
-     "GitHub": { "ClientId": "...", "ClientSecret": "..." }
-   }
+All settings live in `PortfolioApp.Web/appsettings.json`. Each one can be overridden with an environment variable, using `__` in place of `:`.
+
+| Setting | Default | Description |
+|---|---|---|
+| `ConnectionStrings:DefaultConnection` | `Data Source=App_Data/portfolio.db` | SQLite file. Relative paths resolve against the web project folder. |
+| `AdminUser:Email` / `AdminUser:Password` | see above | First-run admin account. |
+| `Storage:UploadsPath` | *(empty → `wwwroot/uploads`)* | Where admin uploads are stored. They are always served at `/uploads`. |
+| `DataProtection:KeysPath` | *(empty → default location)* | Persist auth-cookie keys, e.g. in containers. |
+| `Smtp:*` | *(empty → disabled)* | Email notification for new contact messages. |
+| `Authentication:Google:*`, `Authentication:GitHub:*` | *(empty → disabled)* | Optional social sign-in. |
+
+### 📧 Email notifications (optional)
+
+```bash
+dotnet user-secrets --project PortfolioApp.Web set "Smtp:Host" "smtp.example.com"
+dotnet user-secrets --project PortfolioApp.Web set "Smtp:UserName" "you@example.com"
+dotnet user-secrets --project PortfolioApp.Web set "Smtp:Password" "app-password"
+dotnet user-secrets --project PortfolioApp.Web set "Smtp:From" "you@example.com"
+# Smtp:To defaults to the email on your profile
+```
+
+If sending fails, the message is still saved to the inbox and the error is logged.
+
+### 🛡️ Social sign-in (optional)
+
+Google and GitHub sign-in are enabled only for providers whose `ClientId` and `ClientSecret` are set:
+
+1. Register an OAuth app in the [Google Cloud Console](https://console.cloud.google.com/) and/or [GitHub Developer Settings](https://github.com/settings/developers).
+   Callback URLs: `https://<your-host>/signin-google` and `https://<your-host>/signin-github`.
+2. Store the credentials:
+   ```bash
+   dotnet user-secrets --project PortfolioApp.Web set "Authentication:Google:ClientId" "..."
+   dotnet user-secrets --project PortfolioApp.Web set "Authentication:Google:ClientSecret" "..."
    ```
+
+External sign-in **never creates accounts**. The first time you sign in with a provider, it is linked to the existing admin account **with the same email**; any other account is rejected.
+
+---
+
+## 🐳 Docker
+
+```bash
+ADMIN_EMAIL=you@example.com docker compose up -d --build
+docker compose logs portfolio | grep "generated password"   # if you didn't set ADMIN_PASSWORD
+```
+
+The site is served on port 8080. The database, uploads and data-protection keys are stored in the `portfolio-data` volume (`/app/data`). Put a reverse proxy in front for HTTPS; the image trusts `X-Forwarded-*` headers.
+
+---
+
+## 🧪 Tests
+
+```bash
+dotnet test
+```
+
+The tests cover the data services (including repeated edits, search, rate limiting and notification failure), entity validation, upload type detection and admin seeding.
+
+## 🗄️ Database migrations
+
+```bash
+dotnet tool restore
+dotnet dotnet-ef migrations add <Name> --project PortfolioApp.Infrastructure --startup-project PortfolioApp.Infrastructure --output-dir Data/Migrations
+```
+
+Migrations are applied automatically at startup.
 
 ---
 
 ## 📄 License
-This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details.
-
----
+This project is licensed under the MIT License. See [LICENSE.txt](LICENSE.txt) for details.
 
 ## 🤝 Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Contributions are welcome! Fork the project, create a feature branch, commit your changes and open a pull request.
 
 ---
 

@@ -1,0 +1,31 @@
+@* One role in a dated list (home, experience page, CV). *@
+
+<li class="entry">
+    <div class="entry-when">
+        @Experience.StartDate.ToString("MMM yyyy") –<br class="d-none d-sm-inline" />
+        @(Experience.IsCurrent ? "Present" : Experience.EndDate?.ToString("MMM yyyy"))
+    </div>
+    <div>
+        <h3 class="entry-title">
+            @Experience.Role
+            @if (Experience.IsCurrent)
+            {
+                <span class="tag-now">Current</span>
+            }
+        </h3>
+        <p class="entry-org">@Experience.Company</p>
+        @if (!string.IsNullOrEmpty(Experience.Location))
+        {
+            <p class="entry-meta">@Experience.Location</p>
+        }
+        @if (ShowDescription && !string.IsNullOrEmpty(Experience.Description))
+        {
+            <p class="entry-body">@Experience.Description</p>
+        }
+    </div>
+</li>
+
+@code {
+    [Parameter, EditorRequired] public PortfolioApp.Domain.Entities.Experience Experience { get; set; } = default!;
+    [Parameter] public bool ShowDescription { get; set; } = true;
+}

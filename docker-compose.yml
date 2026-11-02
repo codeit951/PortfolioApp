@@ -1,0 +1,22 @@
+services:
+  portfolio:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      AdminUser__Email: ${ADMIN_EMAIL:-admin@example.com}
+      # Leave empty to have a random password generated and printed in the logs on first start.
+      AdminUser__Password: ${ADMIN_PASSWORD:-}
+      # Optional: email notifications for new contact messages
+      Smtp__Host: ${SMTP_HOST:-}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__UserName: ${SMTP_USER:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Smtp__From: ${SMTP_FROM:-}
+      Smtp__To: ${SMTP_TO:-}
+    volumes:
+      - portfolio-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  portfolio-data:

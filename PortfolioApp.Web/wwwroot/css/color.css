@@ -1,0 +1,242 @@
+/* ==========================================================================
+   Color & life — layered on top of app.css
+   A small earthy palette used for page tones, project panels, skill groups
+   and a few highlight moments. Each tone is tuned for both themes.
+   ========================================================================== */
+:root, [data-bs-theme="light"] {
+    --c-rust:  #a84e2a;
+    --c-ochre: #a8741c;
+    --c-sage:  #4c7752;
+    --c-slate: #3d6186;
+    --c-plum:  #7e4767;
+    --wash: 9%;
+}
+[data-bs-theme="dark"] {
+    --c-rust:  #df8a63;
+    --c-ochre: #d8a64c;
+    --c-sage:  #8fb894;
+    --c-slate: #87abd1;
+    --c-plum:  #c98fae;
+    --wash: 12%;
+}
+.tone-rust  { --tone: var(--c-rust); }
+.tone-ochre { --tone: var(--c-ochre); }
+.tone-sage  { --tone: var(--c-sage); }
+.tone-slate { --tone: var(--c-slate); }
+.tone-plum  { --tone: var(--c-plum); }
+
+/* Anything without a tone class uses the accent. */
+:root { --tone: var(--accent); }
+[data-bs-theme] body { --tone: var(--accent); }
+
+/* ── Page headings: tinted band + a colored full stop ───────────────────── */
+.page-head {
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--tone, var(--accent)) var(--wash), var(--bg)) 0%,
+        var(--bg) 100%);
+    border-bottom-color: color-mix(in srgb, var(--tone, var(--accent)) 22%, var(--line));
+}
+.page-title::after, .display::after { content: "."; color: var(--tone, var(--accent)); }
+.no-stop::after { content: none !important; }
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.display em {
+    font-style: italic;
+    color: var(--accent);
+    padding-right: 0.04em;
+}
+.hero-role .role-dot {
+    width: 8px; height: 8px; border-radius: 2px;
+    background: var(--c-ochre);
+    display: inline-block; align-self: center;
+}
+.portrait-frame { position: relative; justify-self: start; }
+.portrait-frame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translate(14px, 14px);
+    border-radius: var(--r-lg);
+    background: var(--c-ochre);
+    opacity: 0.9;
+    transition: transform 400ms var(--ease);
+}
+.portrait-frame:hover::before { transform: translate(8px, 8px); }
+.portrait-frame .portrait { position: relative; display: block; }
+@media (max-width: 599.98px) {
+    .hero-role .role-dot { display: none; }
+}
+@media (max-width: 899.98px) {
+    .portrait-frame { order: -1; margin-bottom: 0.5rem; }
+    .portrait-frame .portrait { order: 0; }
+    .portrait-frame::before { transform: translate(8px, 8px); border-radius: var(--r); }
+}
+
+/* Facts: a colored tick above each number. */
+.fact::after {
+    content: "";
+    order: 3;
+    width: 22px; height: 3px; border-radius: 2px;
+    background: var(--tone, var(--accent));
+    margin-bottom: 0.9rem;
+}
+.facts .fact:nth-child(1) { --tone: var(--c-rust); }
+.facts .fact:nth-child(2) { --tone: var(--c-ochre); }
+.facts .fact:nth-child(3) { --tone: var(--c-sage); }
+.facts .fact:nth-child(4) { --tone: var(--c-slate); }
+
+.eyebrow::before {
+    content: "";
+    display: inline-block;
+    width: 8px; height: 8px; border-radius: 2px;
+    background: var(--tone, var(--accent));
+    margin-right: 0.5rem;
+    vertical-align: 1px;
+}
+
+/* ── Buttons warm to the accent on hover ───────────────────────────────── */
+.btn-accent:hover, .btn-accent:focus-visible {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+}
+.btn-outline-accent:hover, .btn-outline-accent:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+.btn-accent .bi, .btn-outline-accent .bi { transition: transform 200ms var(--ease); }
+.btn-accent:hover .bi-arrow-right, .btn-outline-accent:hover .bi-arrow-right { transform: translateX(3px); }
+
+/* ── Projects: colored panels and a tone glow on hover ─────────────────── */
+/* --tone comes from the .tone-* class on each project (falls back to the accent). */
+.project-placeholder {
+    background:
+        radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--tone) 26%, transparent), transparent 65%),
+        color-mix(in srgb, var(--tone) 14%, var(--surface));
+    color: color-mix(in srgb, var(--tone) 70%, var(--surface));
+}
+.project-media { transition: box-shadow 300ms var(--ease), border-color 300ms var(--ease), transform 300ms var(--ease); }
+.project:hover .project-media {
+    border-color: color-mix(in srgb, var(--tone) 45%, var(--line));
+    box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--tone) 60%, transparent);
+    transform: translateY(-3px);
+}
+.project-label { color: var(--tone); }
+
+/* ── Skills: per-group tone and level dots ─────────────────────────────── */
+.skill-group h2::after { content: "."; color: var(--tone); }
+.level-dots { display: inline-flex; gap: 3px; margin-left: 0.6rem; vertical-align: 1px; }
+.level-dots i {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: color-mix(in srgb, var(--tone) 18%, var(--line));
+}
+.level-dots i.on { background: var(--tone); }
+.skill-level.is-expert { color: var(--tone); }
+
+/* ── Experience ────────────────────────────────────────────────────────── */
+.tag-now {
+    color: var(--c-sage);
+    background: color-mix(in srgb, var(--c-sage) 14%, transparent);
+}
+.tag-now::before {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+    margin-right: 0.35rem;
+    vertical-align: 1px;
+}
+.entry .entry-title { transition: color 200ms var(--ease); }
+.entry:hover .entry-title { color: var(--tone, var(--accent)); }
+
+/* ── Call-to-action band ───────────────────────────────────────────────── */
+.cta-band {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: var(--r-lg);
+    padding: clamp(2rem, 6vw, 4rem);
+    display: grid;
+    gap: 1.75rem;
+    position: relative;
+    overflow: hidden;
+}
+@media (min-width: 900px) { .cta-band { grid-template-columns: minmax(0, 1fr) auto; align-items: end; } }
+.cta-band::after {
+    /* a large, faint serif ampersand for texture */
+    content: "&";
+    position: absolute;
+    right: 0.02em; top: -0.3em;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(12rem, 30vw, 22rem);
+    line-height: 1;
+    color: var(--accent-ink);
+    opacity: 0.09;
+    pointer-events: none;
+}
+.cta-band > * { position: relative; z-index: 1; }
+.cta-band h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+    line-height: 1;
+    color: var(--accent-ink);
+    margin: 0 0 0.75rem;
+}
+.cta-band p { margin: 0; max-width: 46ch; opacity: 0.9; font-size: 1.0625rem; }
+.cta-band .btn-accent { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--accent); }
+.cta-band .btn-accent:hover { background: color-mix(in srgb, var(--accent-ink) 88%, var(--accent)); border-color: transparent; color: var(--accent); }
+.cta-band .text-link { color: var(--accent-ink); text-decoration-color: color-mix(in srgb, var(--accent-ink) 45%, transparent); }
+.cta-band .text-link:hover { color: var(--accent-ink); text-decoration-color: var(--accent-ink); }
+
+/* ── Contact success ───────────────────────────────────────────────────── */
+.panel.is-success {
+    border-color: color-mix(in srgb, var(--c-sage) 40%, var(--line));
+    background: color-mix(in srgb, var(--c-sage) 8%, var(--surface));
+}
+.panel.is-success .section-title::after { content: "."; color: var(--c-sage); }
+
+/* ── Footer wordmark ───────────────────────────────────────────────────── */
+.footer-mark {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 12.5vw, 9.5rem);
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    color: color-mix(in srgb, var(--ink) 13%, var(--bg));
+    margin: 0 0 1.5rem;
+    padding: 0.05em 0 0.18em; /* room for descenders (y, g) */
+    white-space: nowrap;
+    overflow: hidden;
+    user-select: none;
+}
+.footer-mark em { font-style: italic; color: color-mix(in srgb, var(--accent) 40%, var(--bg)); }
+
+.brand-dot { transition: transform 300ms var(--ease), background-color 300ms var(--ease); }
+.brand:hover .brand-dot { transform: rotate(45deg) scale(1.15); background: var(--c-ochre); }
+
+/* ── Scroll reveal ─────────────────────────────────────────────────────────
+   Content is only hidden once the script has confirmed it can reveal it. */
+.reveal-ready [data-reveal] {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+    transition-delay: calc(var(--i, 0) * 80ms);
+}
+.reveal-ready [data-reveal][data-shown] { opacity: 1; transform: none; }
+
+/* ── Admin: toned stat tiles ───────────────────────────────────────────── */
+.stat-tile { border-top: 3px solid var(--tone, var(--line)) !important; }
+.row > div:nth-child(1) > .stat-tile { --tone: var(--c-rust); }
+.row > div:nth-child(2) > .stat-tile { --tone: var(--c-ochre); }
+.row > div:nth-child(3) > .stat-tile { --tone: var(--c-sage); }
+.row > div:nth-child(4) > .stat-tile { --tone: var(--c-slate); }
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal-ready [data-reveal] { opacity: 1; transform: none; }
+}
+@media print {
+    .page-title::after, .display::after { content: none; }
+    .footer-mark, .cta-band { display: none !important; }
+    .reveal-ready [data-reveal] { opacity: 1; transform: none; }
+}

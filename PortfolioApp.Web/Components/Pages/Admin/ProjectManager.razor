@@ -1,21 +1,23 @@
-@page "/admin/projects"
+﻿@page "/admin/projects"
 @layout Layout.AdminLayout
 @attribute [Authorize(Roles = "Admin")]
 @inject IProjectService ProjectService
 @inject IToastService Toast
-@inject IWebHostEnvironment Environment
+@inject FileStorageService Storage
+@inject IJSRuntime JS
+@inject ILogger<ProjectManager> Logger
 @rendermode InteractiveServer
-@using System.IO
+@implements IDisposable
 
 <PageTitle>Manage Projects</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold">Projects</h2>
-        <p class="text-muted">Showcase your best work and personal projects</p>
+        <h1 class="h2 fw-semibold mb-1">Projects</h1>
+        <p class="text-muted">Featured projects also appear on the home page.</p>
     </div>
-    <button class="btn btn-primary rounded-pill px-4" @onclick="() => OpenModal()">
-        <i class="bi bi-plus-lg me-2"></i>Add Project
+    <button class="btn btn-primary px-4" @onclick="() => OpenModal()">
+        <i class="bi bi-plus-lg me-2"></i>Add project
     </button>
 </div>
 
@@ -53,27 +55,27 @@ else
                         
                         @if (proj.IsFeatured)
                         {
-                            <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-3 rounded-pill shadow-sm">
+                            <span class="badge bg-warning position-absolute top-0 end-0 m-2">
                                 <i class="bi bi-star-fill me-1"></i>Featured
                             </span>
                         }
                     </div>
                     <div class="card-body p-4">
-                        <h5 class="fw-bold mb-2">@proj.Title</h5>
+                        <h5 class="fw-semibold mb-2">@proj.Title</h5>
                         <p class="text-muted small text-truncate mb-3">@proj.Description</p>
                         <div class="d-flex flex-wrap gap-1 mb-4">
-                            @foreach (var tag in proj.TechStack.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                            @foreach (var tag in proj.TechStack.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                             {
-                                <span class="badge bg-info bg-opacity-10 text-info small border-0">@tag.Trim()</span>
+                                <span class="badge bg-info small">@tag.Trim()</span>
                             }
                         </div>
                         <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                             <div class="small text-muted">@proj.CreatedAt.ToString("MMM yyyy")</div>
                             <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-info rounded-circle me-2" @onclick="() => OpenModal(proj)">
+                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => OpenModal(proj)">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger rounded-circle" @onclick="() => DeleteProject(proj.Id)">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProject(proj)" title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -91,7 +93,7 @@ else
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 shadow">
                 <div class="modal-header border-0 pt-4 px-4">
-                    <h5 class="modal-title fw-bold">@(_editingProj.Id == 0 ? "Add New" : "Edit") Project</h5>
+                    <h5 class="modal-title fw-semibold">@(_editingProj.Id == 0 ? "Add" : "Edit") project</h5>
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -116,14 +118,17 @@ else
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">GitHub URL</label>
                                 <InputText @bind-Value="_editingProj.GitHubUrl" class="form-control" placeholder="https://github.com/..." />
+                                <ValidationMessage For="() => _editingProj.GitHubUrl" class="text-danger small" />
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Demo URL</label>
                                 <InputText @bind-Value="_editingProj.DemoUrl" class="form-control" placeholder="https://demo.com" />
+                                <ValidationMessage For="() => _editingProj.DemoUrl" class="text-danger small" />
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-semibold">Description</label>
                                 <InputTextArea @bind-Value="_editingProj.Description" class="form-control" rows="4" />
+                                <ValidationMessage For="() => _editingProj.Description" class="text-danger small" />
                             </div>
                              <div class="col-12">
                                 <label class="form-label fw-semibold">Project Preview Image</label>
@@ -134,7 +139,7 @@ else
                                             <img src="@_editingProj.ImageUrl" class="rounded-3 shadow-sm" style="width: 120px; height: 75px; object-fit: cover;" />
                                             <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 p-1" 
                                                     style="transform: translate(50%, -50%); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" 
-                                                    @onclick="() => _editingProj.ImageUrl = null">
+                                                    title="Remove image" @onclick="() => _editingProj.ImageUrl = string.Empty">
                                                 <i class="bi bi-x"></i>
                                             </button>
                                         </div>
@@ -147,20 +152,19 @@ else
                                     }
                                     <div class="flex-grow-1">
                                         <InputFile OnChange="HandleFileSelected" class="@($"form-control {(string.IsNullOrEmpty(_editingProj.ImageUrl) ? "" : "is-valid")}")" accept=".jpg,.jpeg,.png,.webp" />
-                                        <div class="form-text small mt-1">Recommended: 800x500px, Max 5MB</div>
-                                        <ValidationMessage For="() => _editingProj.ImageUrl" class="text-danger small" />
+                                        <div class="form-text small mt-1">Optional. JPG, PNG or WebP. Recommended 800x500px, max 5MB.</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer border-0 pb-4 px-4">
-                            <button type="button" class="btn btn-light rounded-pill px-4" @onclick="CloseModal">Cancel</button>
-                            <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@_submitting">
+                            <button type="button" class="btn btn-light px-4" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4" disabled="@(_submitting || _uploading)">
                                 @if (_submitting)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2"></span>
                                 }
-                                Save Project
+                                Save
                             </button>
                         </div>
                     </EditForm>
@@ -175,16 +179,22 @@ else
     private bool _showModal;
     private Project _editingProj = new();
     private bool _submitting;
+    private bool _uploading;
+    private UploadTracker _uploads = default!;
 
-    protected override async Task OnInitializedAsync() => await LoadData();
+    protected override async Task OnInitializedAsync()
+    {
+        _uploads = new UploadTracker(Storage);
+        await LoadData();
+    }
 
     private async Task LoadData() => _projects = await ProjectService.GetAllAsync();
 
     private void OpenModal(Project? proj = null)
     {
-        if (proj != null)
-        {
-            _editingProj = new Project
+        _editingProj = proj is null
+            ? new Project { CreatedAt = DateTime.UtcNow }
+            : new Project
             {
                 Id = proj.Id,
                 Title = proj.Title,
@@ -196,22 +206,20 @@ else
                 IsFeatured = proj.IsFeatured,
                 CreatedAt = proj.CreatedAt
             };
-        }
-        else
-        {
-            _editingProj = new Project { CreatedAt = DateTime.Today };
-        }
+        _uploads.Begin(_editingProj.ImageUrl);
         _showModal = true;
     }
 
     private void CloseModal()
     {
+        _uploads.Rollback(); // discard images uploaded but never saved
         _showModal = false;
         _editingProj = new();
     }
 
     private async Task HandleSubmit()
     {
+        if (_uploading) return;
         _submitting = true;
         try
         {
@@ -220,57 +228,58 @@ else
             else
                 await ProjectService.UpdateAsync(_editingProj);
 
+            _uploads.Commit(_editingProj.ImageUrl); // delete the replaced image and unused uploads
             Toast.ShowSuccess("Project saved successfully");
-            CloseModal();
+            _showModal = false;
+            _editingProj = new();
             await LoadData();
         }
         catch (Exception ex)
         {
-            Toast.ShowError("Error: " + ex.Message);
+            Logger.LogError(ex, "Failed to save project {ProjectId}", _editingProj.Id);
+            Toast.ShowError("Could not save the project. Please try again.");
         }
         finally { _submitting = false; }
     }
 
-    private async Task DeleteProject(int id)
+    private async Task DeleteProject(Project project)
     {
-        if (await JS.InvokeAsync<bool>("confirm", "Delete this project?"))
+        if (!await JS.InvokeAsync<bool>("confirm", $"Delete \"{project.Title}\"?")) return;
+        try
         {
-            await ProjectService.DeleteAsync(id);
+            await ProjectService.DeleteAsync(project.Id);
+            Storage.Delete(project.ImageUrl);
             Toast.ShowSuccess("Project removed");
             await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to delete project {ProjectId}", project.Id);
+            Toast.ShowError("Could not delete the project.");
         }
     }
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
-        var file = e.File;
-        if (file != null)
+        _uploading = true;
+        try
         {
-            try
-            {
-                var extension = Path.GetExtension(file.Name);
-                var fileName = $"{Guid.NewGuid()}{extension}";
-                var uploadPath = Path.Combine(Environment.WebRootPath, "uploads", "projects");
-                
-                if (!Directory.Exists(uploadPath))
-                    Directory.CreateDirectory(uploadPath);
-
-                var fullPath = Path.Combine(uploadPath, fileName);
-                
-                // 5MB max
-                await using var stream = file.OpenReadStream(5 * 1024 * 1024);
-                await using var fs = new FileStream(fullPath, FileMode.Create);
-                await stream.CopyToAsync(fs);
-
-                _editingProj.ImageUrl = $"/uploads/projects/{fileName}";
-                Toast.ShowInfo("Image uploaded successfully");
-            }
-            catch (Exception ex)
-            {
-                Toast.ShowError("Upload failed: " + ex.Message);
-            }
+            var url = await Storage.SaveAsync(e.File, "projects", UploadKind.Image, 5 * 1024 * 1024);
+            _uploads.Track(url);
+            _editingProj.ImageUrl = url;
+            Toast.ShowInfo("Image uploaded");
         }
+        catch (UploadRejectedException ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Project image upload failed");
+            Toast.ShowError("Upload failed. Please try another file.");
+        }
+        finally { _uploading = false; }
     }
 
-    [Inject] IJSRuntime JS { get; set; } = default!;
+    public void Dispose() => _uploads?.Rollback();
 }

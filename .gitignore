@@ -361,3 +361,13 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# ── PortfolioApp ──
+# Local database (contains the admin password hash and visitor messages)
+*.db
+*.db-shm
+*.db-wal
+App_Data/
+# Admin uploads are user content, not source
+PortfolioApp.Web/wwwroot/uploads/
+# Data-protection keys if persisted locally
+keys/

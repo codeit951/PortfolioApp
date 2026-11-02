@@ -3,15 +3,16 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject IUserProfileService ProfileService
 @inject IToastService Toast
-@inject IWebHostEnvironment Environment
+@inject FileStorageService Storage
+@inject ILogger<ProfileManager> Logger
 @rendermode InteractiveServer
-@using System.IO
+@implements IDisposable
 
 <PageTitle>Manage Profile</PageTitle>
 
 <div class="mb-4">
-    <h2 class="fw-bold">Profile Management</h2>
-    <p class="text-muted">Update your personal information and contact details</p>
+    <h1 class="h2 fw-semibold mb-1">Profile</h1>
+    <p class="text-muted">Name, bio, photo, CV and contact links.</p>
 </div>
 
 @if (_profile == null)
@@ -23,15 +24,14 @@
 else
 {
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-body p-5">
+        <div class="card-body p-3 p-md-5">
             <EditForm Model="_profile" OnValidSubmit="SaveProfile" FormName="profileForm">
-                
                 <DataAnnotationsValidator />
 
                 <div class="row g-4">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Full Name</label>
-                        <InputText @bind-Value="_profile.FullName" class="form-control" placeholder="Alex Morgan" />
+                        <InputText @bind-Value="_profile.FullName" class="form-control" placeholder="Your name" />
                         <ValidationMessage For="() => _profile.FullName" class="text-danger small mt-1" />
                     </div>
 
@@ -43,18 +43,19 @@ else
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Email Address</label>
-                        <InputText @bind-Value="_profile.Email" class="form-control" placeholder="alex@example.com" />
+                        <InputText @bind-Value="_profile.Email" class="form-control" placeholder="you@example.com" />
                         <ValidationMessage For="() => _profile.Email" class="text-danger small mt-1" />
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Phone Number</label>
-                        <InputText @bind-Value="_profile.Phone" class="form-control" placeholder="+1 234 567 890" />
+                        <InputText @bind-Value="_profile.Phone" class="form-control" placeholder="Optional" />
+                        <ValidationMessage For="() => _profile.Phone" class="text-danger small mt-1" />
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Location</label>
-                        <InputText @bind-Value="_profile.Location" class="form-control" placeholder="London, UK" />
+                        <InputText @bind-Value="_profile.Location" class="form-control" placeholder="City, Country" />
                     </div>
 
                     <div class="col-md-6">
@@ -62,7 +63,7 @@ else
                         <div class="d-flex align-items-center gap-3">
                             @if (!string.IsNullOrEmpty(_profile.ProfileImageUrl))
                             {
-                                <img src="@_profile.ProfileImageUrl" class="rounded-circle shadow-sm" style="width: 64px; height: 64px; object-fit: cover;" />
+                                <img src="@_profile.ProfileImageUrl" alt="Profile" class="rounded-circle shadow-sm" style="width: 64px; height: 64px; object-fit: cover;" />
                             }
                             else
                             {
@@ -72,24 +73,48 @@ else
                             }
                             <div class="flex-grow-1">
                                 <InputFile OnChange="HandleProfileImageUpload" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp" />
-                                <div class="form-text small">Max 2MB (JPG, PNG)</div>
+                                <div class="form-text small">JPG, PNG or WebP, max 2MB</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">CV / Résumé (PDF)</label>
+                        <div class="d-flex flex-wrap align-items-center gap-3">
+                            @if (!string.IsNullOrEmpty(_profile.CvFileUrl))
+                            {
+                                <a href="@_profile.CvFileUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>View current CV
+                                </a>
+                                <button type="button" class="btn btn-sm btn-link text-danger" @onclick="() => _profile.CvFileUrl = string.Empty">Remove</button>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">No CV uploaded — the Download button is hidden.</span>
+                            }
+                            <div class="flex-grow-1" style="min-width:220px;">
+                                <InputFile OnChange="HandleCvUpload" class="form-control form-control-sm" accept=".pdf,application/pdf" />
+                                <div class="form-text small">PDF, max 10MB</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">GitHub URL</label>
-                        <InputText @bind-Value="_profile.GitHubUrl" class="form-control" />
+                        <InputText @bind-Value="_profile.GitHubUrl" class="form-control" placeholder="https://github.com/..." />
+                        <ValidationMessage For="() => _profile.GitHubUrl" class="text-danger small mt-1" />
                     </div>
 
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">LinkedIn URL</label>
-                        <InputText @bind-Value="_profile.LinkedInUrl" class="form-control" />
+                        <InputText @bind-Value="_profile.LinkedInUrl" class="form-control" placeholder="https://linkedin.com/in/..." />
+                        <ValidationMessage For="() => _profile.LinkedInUrl" class="text-danger small mt-1" />
                     </div>
 
                     <div class="col-md-4">
-                        <label class="form-label fw-semibold">Twitter URL</label>
-                        <InputText @bind-Value="_profile.TwitterUrl" class="form-control" />
+                        <label class="form-label fw-semibold">Twitter / X URL</label>
+                        <InputText @bind-Value="_profile.TwitterUrl" class="form-control" placeholder="https://x.com/..." />
+                        <ValidationMessage For="() => _profile.TwitterUrl" class="text-danger small mt-1" />
                     </div>
 
                     <div class="col-12">
@@ -106,17 +131,18 @@ else
 
                     <div class="col-12 mt-5">
                         <hr class="mb-4" />
-                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-pill" disabled="@_saving">
+                        <button type="submit" class="btn btn-primary px-5 py-2 fw-semibold" disabled="@(_saving || _uploading)">
                             @if (_saving)
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                <span>Saving Changes...</span>
+                                <span>Saving…</span>
                             }
                             else
                             {
-                                <i class="bi bi-save-fill me-2"></i><span>Save Profile</span>
+                                <span>Save profile</span>
                             }
                         </button>
+                        <div class="form-text small mt-2">Uploaded files are only kept once you save.</div>
                     </div>
                 </div>
             </EditForm>
@@ -127,62 +153,82 @@ else
 @code {
     private UserProfile? _profile;
     private bool _saving;
+    private bool _uploading;
+    private UploadTracker _imageUploads = default!;
+    private UploadTracker _cvUploads = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        _profile = await ProfileService.GetProfileAsync();
-        if (_profile == null)
-        {
-            _profile = new UserProfile();
-        }
+        _imageUploads = new UploadTracker(Storage);
+        _cvUploads = new UploadTracker(Storage);
+
+        _profile = await ProfileService.GetProfileAsync() ?? new UserProfile();
+        _imageUploads.Begin(_profile.ProfileImageUrl);
+        _cvUploads.Begin(_profile.CvFileUrl);
     }
 
     private async Task SaveProfile()
     {
-        if (_profile == null) return;
-        
+        if (_profile == null || _uploading) return;
+
         _saving = true;
         try
         {
-            await ProfileService.UpsertProfileAsync(_profile);
+            _profile = await ProfileService.UpsertProfileAsync(_profile);
+            _imageUploads.Commit(_profile.ProfileImageUrl);
+            _cvUploads.Commit(_profile.CvFileUrl);
             Toast.ShowSuccess("Profile updated successfully!");
         }
         catch (Exception ex)
         {
-            Toast.ShowError("Failed to update profile: " + ex.Message);
+            Logger.LogError(ex, "Failed to save profile");
+            Toast.ShowError("Failed to update profile. Please try again.");
         }
         finally
         {
             _saving = false;
         }
     }
-    private async Task HandleProfileImageUpload(InputFileChangeEventArgs e)
+
+    private Task HandleProfileImageUpload(InputFileChangeEventArgs e) =>
+        Upload(e.File, "profile", UploadKind.Image, 2 * 1024 * 1024, _imageUploads,
+            url => _profile!.ProfileImageUrl = url, "Profile image uploaded");
+
+    private Task HandleCvUpload(InputFileChangeEventArgs e) =>
+        Upload(e.File, "cv", UploadKind.Pdf, 10 * 1024 * 1024, _cvUploads,
+            url => _profile!.CvFileUrl = url, "CV uploaded — save to publish it");
+
+    private async Task Upload(IBrowserFile file, string folder, UploadKind kind, long maxBytes,
+        UploadTracker tracker, Action<string> apply, string successMessage)
     {
-        var file = e.File;
-        if (file != null)
+        if (_profile is null) return;
+        _uploading = true;
+        try
         {
-            try
-            {
-                var extension = Path.GetExtension(file.Name);
-                var fileName = $"profile_{Guid.NewGuid()}{extension}";
-                var uploadPath = Path.Combine(Environment.WebRootPath, "uploads", "profile");
-
-                if (!Directory.Exists(uploadPath))
-                    Directory.CreateDirectory(uploadPath);
-
-                var fullPath = Path.Combine(uploadPath, fileName);
-
-                await using var stream = file.OpenReadStream(2 * 1024 * 1024); // 2MB
-                await using var fs = new FileStream(fullPath, FileMode.Create);
-                await stream.CopyToAsync(fs);
-
-                _profile.ProfileImageUrl = $"/uploads/profile/{fileName}";
-                Toast.ShowInfo("Profile image uploaded");
-            }
-            catch (Exception ex)
-            {
-                Toast.ShowError("Upload failed: " + ex.Message);
-            }
+            var url = await Storage.SaveAsync(file, folder, kind, maxBytes);
+            tracker.Track(url);
+            apply(url);
+            Toast.ShowInfo(successMessage);
         }
+        catch (UploadRejectedException ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Profile upload to {Folder} failed", folder);
+            Toast.ShowError("Upload failed. Please try another file.");
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        // Leaving without saving discards the uploaded files.
+        _imageUploads?.Rollback();
+        _cvUploads?.Rollback();
     }
 }

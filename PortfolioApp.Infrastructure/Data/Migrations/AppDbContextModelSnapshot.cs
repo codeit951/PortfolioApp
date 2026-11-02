@@ -15,7 +15,7 @@ namespace PortfolioApp.Infrastructure.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.29");
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -233,6 +233,7 @@ namespace PortfolioApp.Infrastructure.Data.Migrations
 
                     b.Property<string>("Location")
                         .IsRequired()
+                        .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Role")
@@ -277,6 +278,7 @@ namespace PortfolioApp.Infrastructure.Data.Migrations
 
                     b.Property<string>("Subject")
                         .IsRequired()
+                        .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -336,10 +338,12 @@ namespace PortfolioApp.Infrastructure.Data.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
+                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Grade")
                         .IsRequired()
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Institution")
@@ -373,6 +377,7 @@ namespace PortfolioApp.Infrastructure.Data.Migrations
 
                     b.Property<string>("IconClass")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Level")
@@ -423,10 +428,12 @@ namespace PortfolioApp.Infrastructure.Data.Migrations
 
                     b.Property<string>("Location")
                         .IsRequired()
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Phone")
                         .IsRequired()
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ProfileImageUrl")
@@ -440,6 +447,7 @@ namespace PortfolioApp.Infrastructure.Data.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TwitterUrl")

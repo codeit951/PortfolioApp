@@ -1,0 +1,29 @@
+@* Renders <title> and meta description using the owner's name from the profile,
+   so no page hardcodes a person's name. Use {name} in Title/Description as a placeholder. *@
+@inject IUserProfileService ProfileService
+
+<PageTitle>@Format(Title)</PageTitle>
+<HeadContent>
+    <meta name="description" content="@Format(Description)" />
+</HeadContent>
+
+@code {
+    /// <summary>Page title. Defaults to "{name} — {title}" (the profile's job title).</summary>
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+
+    private UserProfile? _profile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _profile = await ProfileService.GetProfileAsync();
+    }
+
+    private string Format(string? template)
+    {
+        var name = string.IsNullOrWhiteSpace(_profile?.FullName) ? "Portfolio" : _profile!.FullName;
+        if (string.IsNullOrWhiteSpace(template))
+            return string.IsNullOrWhiteSpace(_profile?.Title) ? name : $"{name} — {_profile!.Title}";
+        return template.Replace("{name}", name).Replace("{title}", _profile?.Title ?? string.Empty);
+    }
+}

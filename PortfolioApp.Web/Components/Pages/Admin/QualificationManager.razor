@@ -1,19 +1,20 @@
-@page "/admin/qualifications"
+﻿@page "/admin/qualifications"
 @layout Layout.AdminLayout
 @attribute [Authorize(Roles = "Admin")]
 @inject IQualificationService QualificationService
 @inject IToastService Toast
+@inject ILogger<QualificationManager> Logger
 @rendermode InteractiveServer
 
 <PageTitle>Manage Qualifications</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold">Qualifications</h2>
-        <p class="text-muted">Manage your educational background and certifications</p>
+        <h1 class="h2 fw-semibold mb-1">Qualifications</h1>
+        <p class="text-muted">Degrees and certifications.</p>
     </div>
-    <button class="btn btn-primary rounded-pill px-4" @onclick="() => OpenModal()">
-        <i class="bi bi-plus-lg me-2"></i>Add Qualification
+    <button class="btn btn-primary px-4" @onclick="() => OpenModal()">
+        <i class="bi bi-plus-lg me-2"></i>Add qualification
     </button>
 </div>
 
@@ -50,13 +51,13 @@ else
                     {
                         <tr>
                             <td class="ps-4">
-                                <div class="fw-bold">@qual.Title</div>
+                                <div class="fw-semibold">@qual.Title</div>
                                 <div class="text-muted small">@qual.Grade</div>
                             </td>
                             <td>@qual.Institution</td>
                             <td>@qual.Year</td>
                             <td class="text-end pe-4">
-                                <button class="btn btn-sm btn-outline-info me-2" @onclick="() => OpenModal(qual)">
+                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => OpenModal(qual)">
                                     <i class="bi bi-pencil"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteQualification(qual.Id)">
@@ -77,7 +78,7 @@ else
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 shadow">
                 <div class="modal-header border-0 pt-4 px-4">
-                    <h5 class="modal-title fw-bold">@(_editingQual.Id == 0 ? "Add New" : "Edit") Qualification</h5>
+                    <h5 class="modal-title fw-semibold">@(_editingQual.Id == 0 ? "Add" : "Edit") qualification</h5>
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -108,13 +109,13 @@ else
                             </div>
                         </div>
                         <div class="modal-footer border-0 pb-4 px-4 mt-3">
-                            <button type="button" class="btn btn-light rounded-pill px-4" @onclick="CloseModal">Cancel</button>
-                            <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@_submitting">
+                            <button type="button" class="btn btn-light px-4" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4" disabled="@_submitting">
                                 @if (_submitting)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2"></span>
                                 }
-                                Save Qualification
+                                Save
                             </button>
                         </div>
                     </EditForm>
@@ -177,7 +178,7 @@ else
         }
         catch (Exception ex)
         {
-            Toast.ShowError("Error: " + ex.Message);
+            Logger.LogError(ex, "Failed to save item"); Toast.ShowError("Could not save. Please check the form and try again.");
         }
         finally { _submitting = false; }
     }

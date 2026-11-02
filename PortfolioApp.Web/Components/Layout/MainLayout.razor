@@ -1,38 +1,57 @@
 @inherits LayoutComponentBase
 @using Blazored.Toast.Configuration
-@inject IJSRuntime JS
-@inject NavigationManager Nav
+@inject IUserProfileService ProfileService
 
-<BlazoredToasts Position="ToastPosition.BottomRight" Timeout="4" IconType="IconType.FontAwesome" />
+@* Interactive toast host: the layout is static, but pages raising toasts run interactively. *@
+<BlazoredToasts @rendermode="InteractiveServer" Position="ToastPosition.BottomRight" Timeout="4" ShowProgressBar="false" />
 
-<div class="d-flex flex-column" style="min-height:100vh;">
+<div class="site d-flex flex-column" style="min-height:100dvh;">
     <NavMenu />
 
-    <main class="flex-grow-1">
+    <main id="main" class="flex-grow-1" tabindex="-1">
         @Body
     </main>
 
-    <footer>
-        <div class="container">
-            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                <div>
-                    <span class="fw-bold text-accent">{ Portfolio }</span>
-                    <span class="text-muted ms-2 small">Built with Blazor &amp; ❤️</span>
-                </div>
-                <p class="text-muted small mb-0">© @DateTime.UtcNow.Year Alex Morgan. All rights reserved.</p>
+    <footer class="site-footer">
+        @if (!string.IsNullOrWhiteSpace(_profile?.FullName))
+        {
+            <div class="container" aria-hidden="true">
+                <p class="footer-mark" data-reveal>@FooterStart<em>@FooterEnd</em></p>
+            </div>
+        }
+        <div class="container footer-inner">
+            <span>© @DateTime.UtcNow.Year @_profile?.FullName</span>
+            <div class="link-row">
+                @if (!string.IsNullOrEmpty(_profile?.Email))
+                {
+                    <a href="mailto:@_profile.Email">Email</a>
+                }
+                @if (!string.IsNullOrEmpty(_profile?.GitHubUrl))
+                {
+                    <a href="@_profile.GitHubUrl" target="_blank" rel="noopener">GitHub</a>
+                }
+                @if (!string.IsNullOrEmpty(_profile?.LinkedInUrl))
+                {
+                    <a href="@_profile.LinkedInUrl" target="_blank" rel="noopener">LinkedIn</a>
+                }
+                @if (!string.IsNullOrEmpty(_profile?.TwitterUrl))
+                {
+                    <a href="@_profile.TwitterUrl" target="_blank" rel="noopener">X</a>
+                }
             </div>
         </div>
     </footer>
 </div>
 
-<!-- Scroll-to-top button -->
-<button id="scrollTop" class="btn btn-accent d-none" style="position:fixed;bottom:2rem;right:2rem;z-index:999;border-radius:50%;width:48px;height:48px;padding:0;display:flex!important;align-items:center;justify-content:center;" onclick="scrollToTop()">
-    <i class="bi bi-arrow-up"></i>
-</button>
+@code {
+    private UserProfile? _profile;
 
-<script>
-    window.addEventListener('scroll', function() {
-        var btn = document.getElementById('scrollTop');
-        if (btn) btn.classList.toggle('d-none', window.scrollY < 400);
-    });
-</script>
+    // Large footer wordmark: first name(s) upright, last name in italic.
+    private string FooterStart => _profile!.FullName.Contains(' ') ? _profile.FullName[..(_profile.FullName.LastIndexOf(' ') + 1)] : "";
+    private string FooterEnd => _profile!.FullName.Contains(' ') ? _profile.FullName[(_profile.FullName.LastIndexOf(' ') + 1)..] : _profile.FullName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _profile = await ProfileService.GetProfileAsync();
+    }
+}

@@ -1,19 +1,20 @@
-@page "/admin/experience"
+﻿@page "/admin/experience"
 @layout Layout.AdminLayout
 @attribute [Authorize(Roles = "Admin")]
 @inject IExperienceService ExperienceService
 @inject IToastService Toast
+@inject ILogger<ExperienceManager> Logger
 @rendermode InteractiveServer
 
 <PageTitle>Manage Experience</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold">Experience</h2>
-        <p class="text-muted">Manage your professional work history</p>
+        <h1 class="h2 fw-semibold mb-1">Experience</h1>
+        <p class="text-muted">Roles shown on the experience page and CV.</p>
     </div>
-    <button class="btn btn-primary rounded-pill px-4" @onclick="() => OpenModal()">
-        <i class="bi bi-plus-lg me-2"></i>Add Experience
+    <button class="btn btn-primary px-4" @onclick="() => OpenModal()">
+        <i class="bi bi-plus-lg me-2"></i>Add role
     </button>
 </div>
 
@@ -50,7 +51,7 @@ else
                     {
                         <tr>
                             <td class="ps-4">
-                                <div class="fw-bold">@exp.Company</div>
+                                <div class="fw-semibold">@exp.Company</div>
                                 <div class="text-muted small">@exp.Location</div>
                             </td>
                             <td>@exp.Role</td>
@@ -60,7 +61,7 @@ else
                                 </span>
                             </td>
                             <td class="text-end pe-4">
-                                <button class="btn btn-sm btn-outline-info me-2" @onclick="() => OpenModal(exp)">
+                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => OpenModal(exp)">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteExperience(exp.Id)">
@@ -81,7 +82,7 @@ else
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 shadow">
                 <div class="modal-header border-0 pt-4 px-4">
-                    <h5 class="modal-title fw-bold">@(_editingExp.Id == 0 ? "Add New" : "Edit") Experience</h5>
+                    <h5 class="modal-title fw-semibold">@(_editingExp.Id == 0 ? "Add" : "Edit") experience</h5>
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -105,6 +106,7 @@ else
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">End Date</label>
                                 <InputDate @bind-Value="_editingExp.EndDate" class="form-control" disabled="@_editingExp.IsCurrent" />
+                                <ValidationMessage For="() => _editingExp.EndDate" class="text-danger small" />
                             </div>
                             <div class="col-12">
                                 <div class="form-check mb-3">
@@ -122,13 +124,13 @@ else
                             </div>
                         </div>
                         <div class="modal-footer border-0 pb-4 px-4">
-                            <button type="button" class="btn btn-light rounded-pill px-4" @onclick="CloseModal">Cancel</button>
-                            <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@_submitting">
+                            <button type="button" class="btn btn-light px-4" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4" disabled="@_submitting">
                                 @if (_submitting)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2"></span>
                                 }
-                                Save Experience
+                                Save
                             </button>
                         </div>
                     </EditForm>
@@ -193,7 +195,7 @@ else
         }
         catch (Exception ex)
         {
-            Toast.ShowError("Error: " + ex.Message);
+            Logger.LogError(ex, "Failed to save item"); Toast.ShowError("Could not save. Please check the form and try again.");
         }
         finally { _submitting = false; }
     }

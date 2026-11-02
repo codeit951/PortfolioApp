@@ -3,128 +3,118 @@
 @using Microsoft.AspNetCore.Authentication
 @using System.ComponentModel.DataAnnotations
 @inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
 @inject NavigationManager NavigationManager
-@inject IToastService Toast
+@inject ILogger<Login> Logger
+@layout Layout.AuthLayout
 
-<PageTitle>Admin Login</PageTitle>
+@* Statically rendered (no interactive render mode): signing in must write the auth cookie,
+   which requires a real HTTP request. *@
 
-<div class="container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
-    <div class="card shadow-lg border-0 rounded-4 overflow-hidden" style="max-width: 450px; width: 100%;">
-        <div class="card-body p-5">
-            <div class="text-center mb-5">
-                <div class="bg-primary bg-opacity-10 d-inline-block p-3 rounded-circle mb-3">
-                    <i class="bi bi-shield-lock-fill text-primary fs-1"></i>
-                </div>
-                <h2 class="fw-bold">Admin Portal</h2>
-                <p class="text-muted">Sign in to manage your portfolio</p>
-            </div>
+<PageTitle>Sign in · Admin</PageTitle>
 
-            <EditForm Model="Input" OnValidSubmit="LoginUser" FormName="loginForm">
-                
-                <DataAnnotationsValidator />
+<div class="auth-card">
+    <a href="/" class="text-link small d-inline-block mb-4"><span aria-hidden="true">←</span> Back to the site</a>
 
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Email Address</label>
-                    <div class="input-group">
-                        <span class="input-group-text  border-end-0"><i class="bi bi-envelope text-muted"></i></span>
-                        <InputText @bind-Value="Input.Email" class="form-control  border-start-0" placeholder="admin@portfolio.dev" />
-                    </div>
-                    <ValidationMessage For="() => Input.Email" class="text-danger small mt-1" />
-                </div>
+    <h1 class="page-title mb-2">Sign in</h1>
+    <p class="text-muted mb-4">Manage your portfolio content.</p>
 
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between">
-                        <label class="form-label fw-semibold">Password</label>
-                    </div>
-                    <div class="input-group">
-                        <span class="input-group-text  border-end-0"><i class="bi bi-key text-muted"></i></span>
-                        <InputText @bind-Value="Input.Password" type="password" class="form-control  border-start-0" placeholder="••••••••" />
-                    </div>
-                    <ValidationMessage For="() => Input.Password" class="text-danger small mt-1" />
-                </div>
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger small" role="alert">@_errorMessage</div>
+    }
 
-                <div class="mb-4 form-check">
-                    <InputCheckbox @bind-Value="Input.RememberMe" class="form-check-input" id="rememberMe" />
-                    <label class="form-check-label text-muted" for="rememberMe">Remember me</label>
-                </div>
+    <EditForm Model="Input" OnValidSubmit="LoginUser" FormName="loginForm" class="panel">
+        <DataAnnotationsValidator />
 
-                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold rounded-3 mb-3" disabled="@_loading">
-                    @if (_loading)
-                    {
-                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        <span>Signing in...</span>
-                    }
-                    else
-                    {
-                        <span>Sign In</span>
-                    }
-                </button>
-                
-                <a href="/" class="btn btn-link w-100 text-decoration-none text-muted small">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Portfolio
-                </a>
-            </EditForm>
-
-            @if (!string.IsNullOrEmpty(_errorMessage))
-            {
-                <div class="alert alert-danger mt-3 small border-0" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>@_errorMessage
-                </div>
-            }
+        <div class="mb-3">
+            <label class="form-label" for="email">Email</label>
+            <InputText id="email" type="email" @bind-Value="Input.Email" class="form-control" autocomplete="username" />
+            <ValidationMessage For="() => Input.Email" class="small mt-1" />
         </div>
-    </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="password">Password</label>
+            <InputText id="password" @bind-Value="Input.Password" type="password" class="form-control" autocomplete="current-password" />
+            <ValidationMessage For="() => Input.Password" class="small mt-1" />
+        </div>
+
+        <div class="mb-4 form-check">
+            <InputCheckbox @bind-Value="Input.RememberMe" class="form-check-input" id="rememberMe" />
+            <label class="form-check-label text-ink-2" for="rememberMe">Keep me signed in</label>
+        </div>
+
+        <button type="submit" class="btn-accent w-100 justify-content-center">Sign in</button>
+
+        @if (_externalSchemes.Count > 0)
+        {
+            <div class="d-flex align-items-center gap-3 my-3 text-muted small">
+                <hr class="flex-grow-1 m-0" /><span>or</span><hr class="flex-grow-1 m-0" />
+            </div>
+            <div class="d-grid gap-2">
+                @foreach (var scheme in _externalSchemes)
+                {
+                    <a class="btn-outline-accent justify-content-center" href="/admin/external-login/@scheme.Name">
+                        <i class="bi @(scheme.Name == "GitHub" ? "bi-github" : "bi-google")" aria-hidden="true"></i>Continue with @(scheme.DisplayName ?? scheme.Name)
+                    </a>
+                }
+            </div>
+        }
+    </EditForm>
 </div>
 
 @code {
     [SupplyParameterFromForm(FormName = "loginForm")]
     private LoginInput Input { get; set; } = new();
 
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery(Name = "error")] private string? ErrorCode { get; set; }
+
     private string? _errorMessage;
-    private bool _loading;
+    private List<AuthenticationScheme> _externalSchemes = new();
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await SignInManager.Context.AuthenticateAsync(IdentityConstants.ApplicationScheme);
-        if (authState.Succeeded)
+        if (authState.Succeeded && HttpMethods.IsGet(SignInManager.Context.Request.Method))
         {
-            NavigationManager.NavigateTo("/admin", true);
+            NavigationManager.NavigateTo(SafeReturnUrl, forceLoad: true);
+            return;
         }
+
+        _externalSchemes = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        _errorMessage = ErrorCode switch
+        {
+            "denied" => "That account isn't linked to an admin user.",
+            "locked" => "This account is temporarily locked. Try again later.",
+            "external" or "provider" => "External sign-in failed. Please try again.",
+            _ => null
+        };
     }
+
+    // Only allow redirects back into this site's admin area.
+    private string SafeReturnUrl =>
+        !string.IsNullOrEmpty(ReturnUrl) && ReturnUrl.StartsWith("/admin", StringComparison.OrdinalIgnoreCase)
+            && !ReturnUrl.StartsWith("//") && !ReturnUrl.StartsWith("/\\")
+            ? ReturnUrl
+            : "/admin";
 
     private async Task LoginUser()
     {
-        _loading = true;
-        _errorMessage = null;
-        bool success = false;
-
-        try
+        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+        if (result.Succeeded)
         {
-            var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
-            if (result.Succeeded)
-            {
-                success = true;
-            }
-            else
-            {
-                _errorMessage = "Invalid login attempt. Please check your credentials.";
-                Toast.ShowError("Login failed");
-            }
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = "An error occurred during login.";
-            Toast.ShowError("Error: " + ex.Message);
-        }
-        finally
-        {
-            _loading = false;
+            NavigationManager.NavigateTo(SafeReturnUrl, forceLoad: true);
+            return;
         }
 
-        if (success)
+        if (result.IsLockedOut)
         {
-            Toast.ShowSuccess("Welcome back!");
-            NavigationManager.NavigateTo("/admin", true);
+            Logger.LogWarning("Locked-out sign-in attempt for {Email}", Input.Email);
+            _errorMessage = "Too many failed attempts. This account is locked for 15 minutes.";
+        }
+        else
+        {
+            _errorMessage = "Invalid login attempt. Please check your credentials.";
         }
     }
 

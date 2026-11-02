@@ -1,0 +1,26 @@
+@* Admin navigation, shared by the desktop sidebar and the mobile menu. *@
+<div class="flex-grow-1">
+    <div class="admin-nav-heading">Content</div>
+    <NavLink class="admin-nav-link" href="/admin" Match="NavLinkMatch.All"><i class="bi bi-grid-1x2" aria-hidden="true"></i>Overview</NavLink>
+    <NavLink class="admin-nav-link" href="/admin/profile"><i class="bi bi-person" aria-hidden="true"></i>Profile</NavLink>
+    <NavLink class="admin-nav-link" href="/admin/projects"><i class="bi bi-collection" aria-hidden="true"></i>Projects</NavLink>
+    <NavLink class="admin-nav-link" href="/admin/experience"><i class="bi bi-briefcase" aria-hidden="true"></i>Experience</NavLink>
+    <NavLink class="admin-nav-link" href="/admin/skills"><i class="bi bi-list-check" aria-hidden="true"></i>Skills</NavLink>
+    <NavLink class="admin-nav-link" href="/admin/qualifications"><i class="bi bi-journal-text" aria-hidden="true"></i>Education</NavLink>
+
+    <div class="admin-nav-heading mt-4">Inbox</div>
+    <NavLink class="admin-nav-link" href="/admin/messages"><i class="bi bi-inbox" aria-hidden="true"></i>Messages</NavLink>
+
+    <div class="admin-nav-heading mt-4">Settings</div>
+    <NavLink class="admin-nav-link" href="/admin/account"><i class="bi bi-key" aria-hidden="true"></i>Account</NavLink>
+</div>
+
+<div class="border-top pt-3 mt-4">
+    <a href="/" class="admin-nav-link"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>View site</a>
+    <form method="post" action="/admin/logout">
+        <AntiforgeryToken />
+        <button type="submit" class="admin-nav-link border-0 w-100 text-start" style="background:none;">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Sign out
+        </button>
+    </form>
+</div>

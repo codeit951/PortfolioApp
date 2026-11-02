@@ -52,7 +52,24 @@ public interface IMessageService
     Task<List<Message>> GetAllAsync();
     Task<int> GetUnreadCountAsync();
     Task<Message?> GetByIdAsync(int id);
+
+    /// <summary>
+    /// Stores a contact-form message and notifies the site owner.
+    /// Throws <see cref="RateLimitExceededException"/> when the sender or the site as a whole
+    /// has sent too many messages recently.
+    /// </summary>
     Task<Message> CreateAsync(Message message);
     Task MarkAsReadAsync(int id);
     Task DeleteAsync(int id);
+}
+
+/// <summary>Sends a notification to the site owner when a new contact message arrives.</summary>
+public interface IMessageNotifier
+{
+    Task NotifyNewMessageAsync(Message message, CancellationToken cancellationToken = default);
+}
+
+public class RateLimitExceededException : Exception
+{
+    public RateLimitExceededException(string message) : base(message) { }
 }

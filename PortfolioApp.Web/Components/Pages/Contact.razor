@@ -2,173 +2,180 @@
 @rendermode InteractiveServer
 @inject IMessageService MessageService
 @inject IUserProfileService ProfileService
-@inject IToastService Toast
+@inject ILogger<Contact> Logger
 
-<PageTitle>Contact — Alex Morgan</PageTitle>
-<HeadContent>
-    <meta name="description" content="Get in touch with Alex Morgan." />
-</HeadContent>
+<PageMeta Title="Contact — {name}" Description="Get in touch with {name}." />
 
-<div class="page-hero">
+<header class="page-head tone-rust">
     <div class="container">
-        <div class="section-tag">Get In Touch</div>
-        <h1 class="section-title mt-2">Contact Me</h1>
-        <p class="section-subtitle">I'm always open to new opportunities and conversations</p>
+        <h1 class="page-title reveal">Contact</h1>
+        <p class="lede reveal-2">Questions, projects or roles: send a message and I'll reply by email.</p>
     </div>
-</div>
+</header>
 
-<section class="section-py">
-    <div class="container">
-        <div class="row g-5 justify-content-center">
-            <!-- Contact info -->
-            <div class="col-lg-4 fade-in-up">
-                <div class="mb-4">
-                    <h4 class="fw-bold mb-3">Let's talk</h4>
-                    <p class="text-secondary">Whether you have a project in mind, a job opportunity, or just want to say hello — my inbox is always open.</p>
-                </div>
-
-                @if (_profile is not null)
-                {
-                    <div class="d-flex flex-column gap-3">
-                        @if (!string.IsNullOrEmpty(_profile.Email))
-                        {
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="qual-icon"><i class="bi bi-envelope-fill"></i></div>
-                                <div>
-                                    <div class="text-muted small">Email</div>
-                                    <a href="mailto:@_profile.Email" class="fw-semibold text-accent">@_profile.Email</a>
-                                </div>
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(_profile.Phone))
-                        {
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="qual-icon"><i class="bi bi-telephone-fill"></i></div>
-                                <div>
-                                    <div class="text-muted small">Phone</div>
-                                    <span class="fw-semibold">@_profile.Phone</span>
-                                </div>
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(_profile.Location))
-                        {
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="qual-icon"><i class="bi bi-geo-alt-fill"></i></div>
-                                <div>
-                                    <div class="text-muted small">Location</div>
-                                    <span class="fw-semibold">@_profile.Location</span>
-                                </div>
-                            </div>
-                        }
-                    </div>
-
-                    <div class="d-flex gap-2 mt-4">
-                        @if (!string.IsNullOrEmpty(_profile.GitHubUrl))
-                        {
-                            <a href="@_profile.GitHubUrl" target="_blank" class="social-btn" title="GitHub"><i class="bi bi-github"></i></a>
-                        }
-                        @if (!string.IsNullOrEmpty(_profile.LinkedInUrl))
-                        {
-                            <a href="@_profile.LinkedInUrl" target="_blank" class="social-btn" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
-                        }
-                        @if (!string.IsNullOrEmpty(_profile.TwitterUrl))
-                        {
-                            <a href="@_profile.TwitterUrl" target="_blank" class="social-btn" title="Twitter/X"><i class="bi bi-twitter-x"></i></a>
-                        }
-                    </div>
-                }
-            </div>
-
-            <!-- Contact form -->
-            <div class="col-lg-6 fade-in-up delay-2">
-                <div class="contact-card">
-                    @if (_sent)
+<section class="section">
+    <div class="container split">
+        <div class="split-label reveal">
+            @if (_profile is not null)
+            {
+                <dl class="contact-details mt-0">
+                    @if (!string.IsNullOrEmpty(_profile.Email))
                     {
-                        <div class="text-center py-4">
-                            <div style="font-size:3.5rem;color:var(--success);" class="mb-3">
-                                <i class="bi bi-check-circle-fill"></i>
-                            </div>
-                            <h4 class="fw-bold mb-2">Message Sent!</h4>
-                            <p class="text-secondary mb-4">Thanks for reaching out. I'll get back to you as soon as possible.</p>
-                            <button class="btn btn-accent" @onclick="() => _sent = false">Send Another</button>
+                        <div><dt>Email</dt><dd><a href="mailto:@_profile.Email" class="text-link">@_profile.Email</a></dd></div>
+                    }
+                    @if (!string.IsNullOrEmpty(_profile.Phone))
+                    {
+                        <div><dt>Phone</dt><dd><a href="tel:@_profile.Phone" class="text-link">@_profile.Phone</a></dd></div>
+                    }
+                    @if (!string.IsNullOrEmpty(_profile.Location))
+                    {
+                        <div><dt>Based in</dt><dd>@_profile.Location</dd></div>
+                    }
+                    @if (!string.IsNullOrEmpty(_profile.GitHubUrl) || !string.IsNullOrEmpty(_profile.LinkedInUrl) || !string.IsNullOrEmpty(_profile.TwitterUrl))
+                    {
+                        <div>
+                            <dt>Elsewhere</dt>
+                            <dd class="link-row mt-1">
+                                @if (!string.IsNullOrEmpty(_profile.GitHubUrl))
+                                {
+                                    <a href="@_profile.GitHubUrl" target="_blank" rel="noopener" class="text-link">GitHub <span class="arrow" aria-hidden="true">↗</span></a>
+                                }
+                                @if (!string.IsNullOrEmpty(_profile.LinkedInUrl))
+                                {
+                                    <a href="@_profile.LinkedInUrl" target="_blank" rel="noopener" class="text-link">LinkedIn <span class="arrow" aria-hidden="true">↗</span></a>
+                                }
+                                @if (!string.IsNullOrEmpty(_profile.TwitterUrl))
+                                {
+                                    <a href="@_profile.TwitterUrl" target="_blank" rel="noopener" class="text-link">X <span class="arrow" aria-hidden="true">↗</span></a>
+                                }
+                            </dd>
                         </div>
                     }
-                    else
-                    {
-                        <EditForm Model="_model" OnValidSubmit="SubmitAsync">
-                            <DataAnnotationsValidator />
-                            <h4 class="fw-bold mb-4">Send a Message</h4>
+                </dl>
+            }
+        </div>
 
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Your Name *</label>
-                                    <InputText class="form-control" @bind-Value="_model.Name" placeholder="John Doe" />
-                                    <ValidationMessage For="() => _model.Name" class="text-danger small mt-1" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Email Address *</label>
-                                    <InputText class="form-control" @bind-Value="_model.Email" placeholder="john@example.com" />
-                                    <ValidationMessage For="() => _model.Email" class="text-danger small mt-1" />
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label">Subject</label>
-                                    <InputText class="form-control" @bind-Value="_model.Subject" placeholder="Project enquiry..." />
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label">Message *</label>
-                                    <InputTextArea class="form-control" @bind-Value="_model.Content" rows="5" placeholder="Tell me about your project or opportunity..." />
-                                    <ValidationMessage For="() => _model.Content" class="text-danger small mt-1" />
-                                </div>
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-accent w-100" disabled="@_submitting">
-                                        @if (_submitting)
-                                        {
-                                            <span class="spinner-border spinner-border-sm me-2"></span>
-                                        }
-                                        <i class="bi bi-send me-2"></i>Send Message
-                                    </button>
-                                </div>
-                            </div>
-                        </EditForm>
-                    }
+        <div class="reveal-2 form-measure">
+            @if (_sent)
+            {
+                <div class="panel is-success" role="status">
+                    <h2 class="section-title mb-2">Thanks, message received</h2>
+                    <p class="text-ink-2 mb-4">I'll reply to the email address you gave, usually within a couple of days.</p>
+                    <button class="btn-outline-accent" @onclick="SendAnother">Send another message</button>
                 </div>
-            </div>
+            }
+            else
+            {
+                <EditForm Model="_model" OnValidSubmit="SubmitAsync" class="panel">
+                    <DataAnnotationsValidator />
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label" for="c-name">Name</label>
+                            <InputText id="c-name" class="form-control" @bind-Value="_model.Name" autocomplete="name" />
+                            <ValidationMessage For="() => _model.Name" class="small mt-1" />
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="c-email">Email</label>
+                            <InputText id="c-email" type="email" class="form-control" @bind-Value="_model.Email" autocomplete="email" />
+                            <ValidationMessage For="() => _model.Email" class="small mt-1" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="c-subject">Subject <span class="text-muted fw-normal">(optional)</span></label>
+                            <InputText id="c-subject" class="form-control" @bind-Value="_model.Subject" />
+                            <ValidationMessage For="() => _model.Subject" class="small mt-1" />
+                        </div>
+                        @* Honeypot: hidden from people, but bots that fill every field will fill it. *@
+                        <div class="contact-hp" aria-hidden="true">
+                            <label for="website">Website</label>
+                            <InputText id="website" @bind-Value="_model.Website" tabindex="-1" autocomplete="off" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="c-message">Message</label>
+                            <InputTextArea id="c-message" class="form-control" @bind-Value="_model.Content" rows="6" />
+                            <ValidationMessage For="() => _model.Content" class="small mt-1" />
+                        </div>
+                        @if (!string.IsNullOrEmpty(_error))
+                        {
+                            <div class="col-12">
+                                <div class="notice" role="alert">@_error</div>
+                            </div>
+                        }
+                        <div class="col-12 d-flex flex-wrap align-items-center gap-3 pt-1">
+                            <button type="submit" class="btn-accent" disabled="@_submitting">
+                                @(_submitting ? "Sending…" : "Send message")
+                            </button>
+                            <span class="text-muted small">All fields except subject are required.</span>
+                        </div>
+                    </div>
+                </EditForm>
+            }
         </div>
     </div>
 </section>
 
 @code {
+    // Submissions faster than this after the form appears are treated as bots.
+    private static readonly TimeSpan MinimumFillTime = TimeSpan.FromSeconds(3);
+
     private ContactModel _model = new();
     private UserProfile? _profile;
     private bool _submitting;
     private bool _sent;
+    private string? _error;
+    private DateTime _formShownAt = DateTime.UtcNow;
 
     protected override async Task OnInitializedAsync()
     {
         _profile = await ProfileService.GetProfileAsync();
+        _formShownAt = DateTime.UtcNow;
     }
 
     private async Task SubmitAsync()
     {
+        _error = null;
+
+        // Silently "succeed" for bots so they get no signal to adapt to.
+        if (!string.IsNullOrEmpty(_model.Website) || DateTime.UtcNow - _formShownAt < MinimumFillTime)
+        {
+            Logger.LogInformation("Contact form submission dropped by spam filter.");
+            ShowSent();
+            return;
+        }
+
         _submitting = true;
         try
         {
             await MessageService.CreateAsync(new Message
             {
-                Name = _model.Name,
-                Email = _model.Email,
-                Subject = _model.Subject,
-                Content = _model.Content
+                Name = _model.Name.Trim(),
+                Email = _model.Email.Trim(),
+                Subject = _model.Subject.Trim(),
+                Content = _model.Content.Trim()
             });
-            _sent = true;
-            Toast.ShowSuccess("Message sent successfully!");
+            ShowSent();
+        }
+        catch (RateLimitExceededException ex)
+        {
+            _error = ex.Message;
         }
         catch (Exception ex)
         {
-            Toast.ShowError("Failed to send message. Please try again.");
-            _ = ex;
+            Logger.LogError(ex, "Failed to save contact message");
+            _error = "Failed to send message. Please try again.";
         }
         finally { _submitting = false; }
+    }
+
+    private void ShowSent()
+    {
+        _sent = true;
+        _model = new();
+    }
+
+    private void SendAnother()
+    {
+        _sent = false;
+        _formShownAt = DateTime.UtcNow;
     }
 
     private class ContactModel
@@ -179,12 +186,18 @@
 
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Email is required")]
         [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Enter a valid email")]
+        [System.ComponentModel.DataAnnotations.MaxLength(200)]
         public string Email { get; set; } = string.Empty;
 
+        [System.ComponentModel.DataAnnotations.MaxLength(300, ErrorMessage = "Subject must be 300 characters or fewer")]
         public string Subject { get; set; } = string.Empty;
 
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Message is required")]
         [System.ComponentModel.DataAnnotations.MinLength(10, ErrorMessage = "Message must be at least 10 characters")]
+        [System.ComponentModel.DataAnnotations.MaxLength(3000, ErrorMessage = "Message must be 3000 characters or fewer")]
         public string Content { get; set; } = string.Empty;
+
+        /// <summary>Honeypot field; real visitors never see or fill it.</summary>
+        public string Website { get; set; } = string.Empty;
     }
 }

@@ -1,0 +1,80 @@
+@* One project in the two-column project grid (home page and projects page). *@
+
+<article class="project @ToneClass" data-reveal style="--i:@(Index % 2)">
+    <a class="project-media" href="@PrimaryLink" target="@(PrimaryLink is null ? null : "_blank")" rel="noopener"
+       tabindex="@(PrimaryLink is null ? "-1" : null)" aria-hidden="@(PrimaryLink is null ? "true" : null)">
+        @if (!string.IsNullOrEmpty(Project.ImageUrl))
+        {
+            <img src="@Project.ImageUrl" alt="Screenshot of @Project.Title" loading="lazy" />
+        }
+        else
+        {
+            <div class="project-placeholder" aria-hidden="true">@_initials</div>
+        }
+    </a>
+
+    @if (Project.IsFeatured && ShowFeatured)
+    {
+        <div class="project-label">Featured</div>
+    }
+    <h3 class="project-title">@Project.Title</h3>
+    <p class="project-desc">@Project.Description</p>
+
+    @if (_stack.Length > 0)
+    {
+        <p class="project-stack">@string.Join("  ·  ", _stack)</p>
+    }
+
+    @if (!string.IsNullOrEmpty(Project.DemoUrl) || !string.IsNullOrEmpty(Project.GitHubUrl))
+    {
+        <div class="link-row project-links">
+            @if (!string.IsNullOrEmpty(Project.DemoUrl))
+            {
+                <a href="@Project.DemoUrl" target="_blank" rel="noopener" class="text-link">Live site <span class="arrow" aria-hidden="true">↗</span></a>
+            }
+            @if (!string.IsNullOrEmpty(Project.GitHubUrl))
+            {
+                <a href="@Project.GitHubUrl" target="_blank" rel="noopener" class="text-link">Source <span class="arrow" aria-hidden="true">↗</span></a>
+            }
+        </div>
+    }
+</article>
+
+@code {
+    private static readonly string[] Tones = { "tone-rust", "tone-ochre", "tone-sage", "tone-slate", "tone-plum" };
+
+    [Parameter, EditorRequired] public Project Project { get; set; } = default!;
+    [Parameter] public bool ShowFeatured { get; set; } = true;
+    /// <summary>Position in the grid; staggers the reveal between the two columns.</summary>
+    [Parameter] public int Index { get; set; }
+
+    private string[] _stack = Array.Empty<string>();
+    private string _initials = string.Empty;
+
+    private string? PrimaryLink =>
+        !string.IsNullOrEmpty(Project.DemoUrl) ? Project.DemoUrl
+        : !string.IsNullOrEmpty(Project.GitHubUrl) ? Project.GitHubUrl
+        : null;
+
+    // A stable color per project (same title -> same tone on every visit).
+    private string ToneClass
+    {
+        get
+        {
+            var hash = 0;
+            foreach (var c in Project.Title) hash = unchecked(hash * 31 + c);
+            return Tones[(hash & int.MaxValue) % Tones.Length];
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        _stack = Project.TechStack.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        // "DevTrack – Issue Tracker" -> "DI" (first letters of the first two words, skipping dashes)
+        _initials = string.Concat(Project.Title
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(w => char.IsLetterOrDigit(w[0]))
+            .Take(2)
+            .Select(w => char.ToUpperInvariant(w[0])));
+    }
+}

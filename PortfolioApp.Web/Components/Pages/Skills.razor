@@ -1,77 +1,57 @@
-@page "/skills"
+﻿@page "/skills"
 @rendermode InteractiveServer
 @inject ISkillService SkillService
 
-<PageTitle>Skills — Alex Morgan</PageTitle>
-<HeadContent>
-    <meta name="description" content="Technical skills and proficiency levels of Alex Morgan." />
-</HeadContent>
+<PageMeta Title="Skills — {name}" Description="Languages, frameworks and tools {name} works with." />
 
-<div class="page-hero">
+<header class="page-head tone-sage">
     <div class="container">
-        <div class="section-tag">Expertise</div>
-        <h1 class="section-title mt-2">Skills &amp; Technologies</h1>
-        <p class="section-subtitle">Tools I use to craft great software</p>
+        <h1 class="page-title reveal">Skills</h1>
+        <p class="lede reveal-2">The languages, frameworks and tools I work with, grouped by how well I know them.</p>
     </div>
-</div>
+</header>
 
-<section class="section-py">
+<section class="section">
     <div class="container">
         @if (_loading)
         {
-            <div class="loading-spinner"><div class="spinner-border text-accent"></div></div>
+            <div class="skeleton"><span></span><span></span><span></span><span></span></div>
+        }
+        else if (_grouped.Count == 0)
+        {
+            <div class="empty"><p>No skills have been added yet.</p></div>
         }
         else
         {
-            <div class="row g-4">
-                @foreach (var (category, skills) in _grouped)
-                {
-                    <div class="col-lg-6 fade-in-up">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <div class="skill-category-header">
-                                    <div class="skill-cat-icon">
-                                        <i class="bi @GetCategoryIcon(category)"></i>
-                                    </div>
-                                    <h3 class="h5 mb-0 fw-700">@category</h3>
-                                </div>
+            <div class="split reveal-2">
+                <div class="split-label">
+                    <p>Each skill is marked Expert, Advanced, Proficient or Familiar, from most to least experience.</p>
+                </div>
+                <div>
+                    @{ var groupIndex = 0; }
+                    @foreach (var (category, skills) in _grouped)
+                    {
+                        <section class="skill-group @Tones[groupIndex++ % Tones.Length]" aria-label="@category" data-reveal>
+                            <h2 class="section-title mb-3">@category</h2>
+                            <ul class="skill-list">
                                 @foreach (var skill in skills)
                                 {
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span class="fw-500" style="font-size:.92rem;">
-                                                @if (!string.IsNullOrEmpty(skill.IconClass))
+                                    var (level, dots) = Level(skill.Level);
+                                    <li>
+                                        <span class="skill-name">@skill.Name</span>
+                                        <span class="skill-level @(dots == 4 ? "is-expert" : null)">
+                                            @level
+                                            <span class="level-dots" aria-hidden="true">
+                                                @for (var d = 1; d <= 4; d++)
                                                 {
-                                                    <i class="@skill.IconClass me-1 text-accent"></i>
+                                                    <i class="@(d <= dots ? "on" : null)"></i>
                                                 }
-                                                @skill.Name
                                             </span>
-                                            <span class="text-accent fw-600" style="font-size:.85rem;">@skill.Level%</span>
-                                        </div>
-                                        <div class="skill-bar-track">
-                                            <div class="skill-bar-fill" style="width:@skill.Level%;"></div>
-                                        </div>
-                                    </div>
+                                        </span>
+                                    </li>
                                 }
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-
-            <!-- Tag cloud -->
-            <div class="text-center mt-5 fade-in-up delay-3">
-                <div class="section-tag mb-3">All Technologies</div>
-                <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
-                    @foreach (var skill in _allSkills)
-                    {
-                        <span class="tech-tag" style="font-size:.85rem;padding:.35rem .9rem;">
-                            @if (!string.IsNullOrEmpty(skill.IconClass))
-                            {
-                                <i class="@skill.IconClass me-1"></i>
-                            }
-                            @skill.Name
-                        </span>
+                            </ul>
+                        </section>
                     }
                 </div>
             </div>
@@ -81,22 +61,21 @@
 
 @code {
     private Dictionary<string, List<Skill>> _grouped = new();
-    private List<Skill> _allSkills = new();
     private bool _loading = true;
 
     protected override async Task OnInitializedAsync()
     {
         _grouped = await SkillService.GetGroupedByCategory();
-        _allSkills = await SkillService.GetAllAsync();
         _loading = false;
     }
 
-    private static string GetCategoryIcon(string category) => category.ToLower() switch
+    private static readonly string[] Tones = { "tone-rust", "tone-sage", "tone-slate", "tone-ochre", "tone-plum" };
+
+    private static (string Name, int Dots) Level(int level) => level switch
     {
-        "languages"        => "bi-code-slash",
-        "frameworks"       => "bi-braces",
-        "tools & platforms"=> "bi-tools",
-        "databases"        => "bi-database",
-        _                  => "bi-star"
+        >= 85 => ("Expert", 4),
+        >= 70 => ("Advanced", 3),
+        >= 50 => ("Proficient", 2),
+        _ => ("Familiar", 1)
     };
 }

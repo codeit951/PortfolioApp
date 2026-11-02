@@ -8,8 +8,8 @@
 <PageTitle>Manage Messages</PageTitle>
 
 <div class="mb-4">
-    <h2 class="fw-bold">Messages</h2>
-    <p class="text-muted">Review and respond to inquiries from your portfolio visitors</p>
+    <h1 class="h2 fw-semibold mb-1">Messages</h1>
+    <p class="text-muted">Messages sent through the contact form.</p>
 </div>
 
 @if (_messages == null)
@@ -44,7 +44,7 @@ else
                 <tbody>
                     @foreach (var msg in _messages)
                     {
-                        <tr class="@(msg.IsRead ? "" : "table-primary fw-bold")" style="cursor: pointer;" @onclick="() => ViewMessage(msg)">
+                        <tr class="@(msg.IsRead ? "" : "table-primary fw-semibold")" style="cursor: pointer;" @onclick="() => ViewMessage(msg)">
                             <td class="ps-4">
                                 <div>@msg.Name</div>
                                 <div class="text-muted small fw-normal">@msg.Email</div>
@@ -80,7 +80,7 @@ else
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 shadow">
                 <div class="modal-header border-0 pt-4 px-4">
-                    <h5 class="modal-title fw-bold">Message Details</h5>
+                    <h5 class="modal-title fw-semibold">Message</h5>
                     <button type="button" class="btn-close" @onclick="() => _selectedMessage = null"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -88,16 +88,16 @@ else
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="small text-muted mb-1">From</div>
-                                <div class="fw-bold">@_selectedMessage.Name</div>
+                                <div class="fw-semibold">@_selectedMessage.Name</div>
                                 <div class="small">@_selectedMessage.Email</div>
                             </div>
                             <div class="col-md-6 text-md-end">
                                 <div class="small text-muted mb-1">Received On</div>
-                                <div class="fw-bold">@_selectedMessage.CreatedAt.ToLocalTime().ToString("MMMM dd, yyyy HH:mm")</div>
+                                <div class="fw-semibold">@_selectedMessage.CreatedAt.ToLocalTime().ToString("MMMM dd, yyyy HH:mm")</div>
                             </div>
                             <div class="col-12 mt-3 pt-3 border-top">
                                 <div class="small text-muted mb-1">Subject</div>
-                                <div class="fw-bold">@_selectedMessage.Subject</div>
+                                <div class="fw-semibold">@_selectedMessage.Subject</div>
                             </div>
                         </div>
                     </div>
@@ -108,10 +108,10 @@ else
                     </div>
                 </div>
                 <div class="modal-footer border-0 pb-4 px-4">
-                    <a href="mailto:@_selectedMessage.Email" class="btn btn-primary rounded-pill px-4">
-                        <i class="bi bi-reply-fill me-2"></i>Reply via Email
+                    <a href="mailto:@_selectedMessage.Email" class="btn btn-primary px-4">
+                        Reply by email
                     </a>
-                    <button type="button" class="btn btn-light rounded-pill px-4" @onclick="() => _selectedMessage = null">Close</button>
+                    <button type="button" class="btn btn-light px-4" @onclick="() => _selectedMessage = null">Close</button>
                 </div>
             </div>
         </div>

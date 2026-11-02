@@ -1,0 +1,144 @@
+@page "/admin/account"
+@layout Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<IdentityUser> SignInManager
+@inject ILogger<Account> Logger
+
+@* Statically rendered so the auth cookie can be refreshed after the password changes
+   (changing the password rotates the security stamp, which would otherwise sign you out). *@
+
+<PageTitle>Account</PageTitle>
+
+<div class="mb-4">
+    <h1 class="h2 fw-semibold mb-1">Account</h1>
+    <p class="text-muted">Signed in as <strong>@_email</strong></p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <h2 class="h6 fw-semibold mb-3">Change password</h2>
+
+                @if (_success)
+                {
+                    <div class="alert alert-success small border-0"><i class="bi bi-check-circle-fill me-2"></i>Password changed.</div>
+                }
+                @foreach (var error in _errors)
+                {
+                    <div class="alert alert-danger small border-0 mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>@error</div>
+                }
+
+                @if (_hasPassword)
+                {
+                    <EditForm Model="Input" OnValidSubmit="ChangePassword" FormName="changePassword">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="current">Current password</label>
+                            <InputText id="current" type="password" class="form-control" @bind-Value="Input.CurrentPassword" autocomplete="current-password" />
+                            <ValidationMessage For="() => Input.CurrentPassword" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="new">New password</label>
+                            <InputText id="new" type="password" class="form-control" @bind-Value="Input.NewPassword" autocomplete="new-password" />
+                            <div class="form-text small">At least 8 characters, including a digit and a symbol.</div>
+                            <ValidationMessage For="() => Input.NewPassword" class="text-danger small" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="confirm">Confirm new password</label>
+                            <InputText id="confirm" type="password" class="form-control" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" />
+                            <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger small" />
+                        </div>
+                        <button type="submit" class="btn btn-primary px-4">Update password</button>
+                    </EditForm>
+                }
+                else
+                {
+                    <p class="text-muted small mb-0">This account signs in with an external provider and has no password.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <h2 class="h6 fw-semibold mb-3">Linked sign-in providers</h2>
+                @if (_logins.Count == 0)
+                {
+                    <p class="text-muted small mb-0">
+                        None. If Google or GitHub sign-in is configured, signing in with an account that uses
+                        <strong>@_email</strong> links it automatically.
+                    </p>
+                }
+                else
+                {
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var login in _logins)
+                        {
+                            <li class="mb-1"><i class="bi bi-check2 me-2 text-success"></i>@(login.ProviderDisplayName ?? login.LoginProvider)</li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    [SupplyParameterFromForm(FormName = "changePassword")]
+    private ChangePasswordInput Input { get; set; } = new();
+
+    private IdentityUser? _user;
+    private string _email = string.Empty;
+    private bool _hasPassword;
+    private bool _success;
+    private List<string> _errors = new();
+    private IList<UserLoginInfo> _logins = new List<UserLoginInfo>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var principal = (await AuthState).User;
+        _user = await UserManager.GetUserAsync(principal);
+        if (_user is null) return;
+
+        _email = _user.Email ?? _user.UserName ?? string.Empty;
+        _hasPassword = await UserManager.HasPasswordAsync(_user);
+        _logins = await UserManager.GetLoginsAsync(_user);
+    }
+
+    private async Task ChangePassword()
+    {
+        if (_user is null) return;
+
+        var result = await UserManager.ChangePasswordAsync(_user, Input.CurrentPassword, Input.NewPassword);
+        if (!result.Succeeded)
+        {
+            _errors = result.Errors.Select(e => e.Description).ToList();
+            return;
+        }
+
+        await SignInManager.RefreshSignInAsync(_user);
+        Logger.LogInformation("Admin {Email} changed their password.", _email);
+        Input = new();
+        _success = true;
+    }
+
+    public class ChangePasswordInput
+    {
+        [Required(ErrorMessage = "Enter your current password")]
+        public string CurrentPassword { get; set; } = "";
+
+        [Required(ErrorMessage = "Enter a new password")]
+        [MinLength(8, ErrorMessage = "Use at least 8 characters")]
+        public string NewPassword { get; set; } = "";
+
+        [Compare(nameof(NewPassword), ErrorMessage = "Passwords don't match")]
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

@@ -5,199 +5,138 @@
 @inject IProjectService ProjectService
 @inject ISkillService SkillService
 
-<PageTitle>Alex Morgan — Senior Full Stack Developer</PageTitle>
-<HeadContent>
-    <meta name="description" content="Alex Morgan — Senior Full Stack Developer specialising in .NET, Blazor and cloud-native applications." />
-</HeadContent>
+<PageMeta Title="" Description="{name} — {title}." />
 
 @if (_loading)
 {
-    <div class="loading-spinner"><div class="spinner-border text-accent" role="status"></div></div>
+    <section class="hero"><div class="container"><div class="skeleton"><span></span><span></span><span></span><span></span></div></div></section>
 }
-else if (_profile is not null)
+else if (_profile is null)
 {
-    <!-- ── Hero ──────────────────────────────────────────────── -->
-    <section class="hero-section section-py">
+    <section class="hero">
         <div class="container">
-            <div class="row align-items-center g-5">
-                <div class="col-lg-7 fade-in-up">
-                    <div class="hero-subtitle mb-3 font-mono">
-                        <span class="text-muted">&gt; </span>@_profile.Title
-                    </div>
-                    <h1 class="hero-title mb-4">@_profile.FullName</h1>
-                    <p class="hero-bio mb-4">@_profile.Bio</p>
-
-                    <div class="d-flex flex-wrap gap-3 mb-4">
-                        <a href="/cv" class="btn btn-accent">
-                            <i class="bi bi-download me-2"></i>Download CV
-                        </a>
-                        <a href="/contact" class="btn btn-outline-accent">
-                            <i class="bi bi-envelope me-2"></i>Get In Touch
-                        </a>
-                    </div>
-
-                    <div class="d-flex gap-2 mt-2">
+            <h1 class="page-title">This site is being set up</h1>
+            <p class="lede mt-3">Check back soon.</p>
+        </div>
+    </section>
+}
+else
+{
+    <section class="hero">
+        <div class="container hero-grid">
+            <div>
+                <div class="hero-role reveal">
+                    <span class="role-dot" aria-hidden="true"></span>
+                    <span>@_profile.Title</span>
+                    @if (!string.IsNullOrEmpty(_profile.Location))
+                    {
+                        <span class="sep" aria-hidden="true">/</span>
+                        <span>@_profile.Location</span>
+                    }
+                </div>
+                <h1 class="display reveal-2">@_nameStart<em>@_nameEnd</em></h1>
+                @if (!string.IsNullOrEmpty(_profile.Bio))
+                {
+                    <p class="lede reveal-3">@_profile.Bio</p>
+                }
+                <div class="hero-actions reveal-3">
+                    <a href="/contact" class="btn-accent">Get in touch</a>
+                    @if (!string.IsNullOrEmpty(_profile.CvFileUrl))
+                    {
+                        <a href="@_profile.CvFileUrl" download class="btn-outline-accent">Download CV</a>
+                    }
+                    else
+                    {
+                        <a href="/cv" class="btn-outline-accent">View CV</a>
+                    }
+                    <div class="link-row">
                         @if (!string.IsNullOrEmpty(_profile.GitHubUrl))
                         {
-                            <a href="@_profile.GitHubUrl" target="_blank" class="social-btn" title="GitHub">
-                                <i class="bi bi-github"></i>
-                            </a>
+                            <a href="@_profile.GitHubUrl" target="_blank" rel="noopener" class="text-link">GitHub <span class="arrow" aria-hidden="true">↗</span></a>
                         }
                         @if (!string.IsNullOrEmpty(_profile.LinkedInUrl))
                         {
-                            <a href="@_profile.LinkedInUrl" target="_blank" class="social-btn" title="LinkedIn">
-                                <i class="bi bi-linkedin"></i>
-                            </a>
+                            <a href="@_profile.LinkedInUrl" target="_blank" rel="noopener" class="text-link">LinkedIn <span class="arrow" aria-hidden="true">↗</span></a>
                         }
                         @if (!string.IsNullOrEmpty(_profile.TwitterUrl))
                         {
-                            <a href="@_profile.TwitterUrl" target="_blank" class="social-btn" title="Twitter/X">
-                                <i class="bi bi-twitter-x"></i>
-                            </a>
-                        }
-                        @if (!string.IsNullOrEmpty(_profile.Email))
-                        {
-                            <a href="mailto:@_profile.Email" class="social-btn" title="Email">
-                                <i class="bi bi-envelope-fill"></i>
-                            </a>
+                            <a href="@_profile.TwitterUrl" target="_blank" rel="noopener" class="text-link">X <span class="arrow" aria-hidden="true">↗</span></a>
                         }
                     </div>
                 </div>
-                <div class="col-lg-5 text-center fade-in-up delay-2">
-                    <img src="@_profile.ProfileImageUrl" alt="@_profile.FullName"
-                         class="hero-avatar"
-                         onerror="this.src='https://ui-avatars.com/api/?name=@Uri.EscapeDataString(_profile.FullName)&size=260&background=6c63ff&color=fff&bold=true'" />
-                </div>
             </div>
+            @if (!string.IsNullOrEmpty(_profile.ProfileImageUrl))
+            {
+                <div class="portrait-frame reveal-2">
+                    <img src="@_profile.ProfileImageUrl" alt="Portrait of @_profile.FullName" class="portrait"
+                         onerror="this.parentElement.style.display='none'" />
+                </div>
+            }
+        </div>
+
+        <div class="container mt-5">
+            <dl class="facts reveal-3">
+                <div class="fact"><dt>Years of experience</dt><dd>@(_yearsExperience > 0 ? _yearsExperience.ToString() : "<1")</dd></div>
+                <div class="fact"><dt>Projects</dt><dd>@_projectCount</dd></div>
+                <div class="fact"><dt>Technologies</dt><dd>@_skillCount</dd></div>
+                <div class="fact"><dt>@(_companyCount == 1 ? "Company" : "Companies")</dt><dd>@_companyCount</dd></div>
+            </dl>
         </div>
     </section>
 
-    <!-- ── Stats ─────────────────────────────────────────────── -->
-    <section style="background:var(--bg-card);border-top:1px solid var(--border-color);border-bottom:1px solid var(--border-color);">
-        <div class="container py-4">
-            <div class="row g-0 text-center">
-                <div class="col-6 col-md-3 stat-card border-end border-bottom border-md-bottom-0">
-                    <div class="stat-number">8+</div>
-                    <div class="stat-label">Years Experience</div>
-                </div>
-                <div class="col-6 col-md-3 stat-card border-md-end border-bottom border-md-bottom-0">
-                    <div class="stat-number">@_projectCount</div>
-                    <div class="stat-label">Projects Built</div>
-                </div>
-                <div class="col-6 col-md-3 stat-card border-end">
-                    <div class="stat-number">@_skillCount</div>
-                    <div class="stat-label">Technologies</div>
-                </div>
-                <div class="col-6 col-md-3 stat-card">
-                    <div class="stat-number">3</div>
-                    <div class="stat-label">Companies</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── Recent Experience ─────────────────────────────────── -->
-    <section class="section-py">
-        <div class="container">
-            <div class="section-header fade-in-up">
-                <div class="section-tag">Career</div>
-                <h2 class="section-title">Work Experience</h2>
-                <div class="section-divider"></div>
-                <p class="section-subtitle">Where I've made an impact</p>
-            </div>
-            <div class="timeline fade-in-up delay-2">
-                @foreach (var exp in _experiences.Take(3))
-                {
-                    <div class="timeline-item">
-                        <div class="timeline-dot @(exp.IsCurrent ? "active" : "")"></div>
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
-                                    <div>
-                                        <h5 class="mb-0 fw-700">@exp.Role</h5>
-                                        <div class="text-accent fw-600">@exp.Company</div>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="badge @(exp.IsCurrent ? "bg-success" : "bg-secondary") rounded-pill">
-                                            @(exp.IsCurrent ? "Current" : exp.EndDate?.Year.ToString())
-                                        </span>
-                                        <div class="text-muted small mt-1">@exp.StartDate.ToString("MMM yyyy") — @(exp.IsCurrent ? "Present" : exp.EndDate?.ToString("MMM yyyy"))</div>
-                                    </div>
-                                </div>
-                                @if (!string.IsNullOrEmpty(exp.Location))
-                                {
-                                    <div class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>@exp.Location</div>
-                                }
-                                <p class="text-secondary mb-0" style="font-size:.92rem;">@exp.Description</p>
-                            </div>
-                        </div>
+    @if (_projects.Count > 0)
+    {
+        <section class="section">
+            <div class="container">
+                <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-5 tone-ochre" data-reveal>
+                    <div>
+                        <span class="eyebrow">Selected work</span>
+                        <h2 class="section-title">Featured projects</h2>
                     </div>
-                }
+                    <a href="/projects" class="text-link">All projects <span class="arrow" aria-hidden="true">→</span></a>
+                </div>
+                <div class="project-grid">
+                    @for (var i = 0; i < _projects.Count; i++)
+                    {
+                        <ProjectCard Project="_projects[i]" Index="i" />
+                    }
+                </div>
             </div>
-            <div class="text-center mt-4 fade-in-up delay-4">
-                <a href="/experience" class="btn btn-outline-accent">View Full History <i class="bi bi-arrow-right ms-1"></i></a>
-            </div>
-        </div>
-    </section>
+        </section>
+    }
 
-    <!-- ── Featured Projects ──────────────────────────────────── -->
-    <section class="section-py" style="background:var(--bg-card);">
+    @if (_experiences.Count > 0)
+    {
+        <section class="section">
+            <div class="container split tone-slate">
+                <div class="split-label" data-reveal>
+                    <h2 class="section-title">Experience</h2>
+                    <p>Recent roles. The full history is on the <a href="/experience" class="text-link">experience page</a>.</p>
+                </div>
+                <ol class="entries" data-reveal style="--i:1">
+                    @foreach (var exp in _experiences.Take(3))
+                    {
+                        <ExperienceEntry Experience="exp" />
+                    }
+                </ol>
+            </div>
+        </section>
+    }
+
+    <section class="section">
         <div class="container">
-            <div class="section-header fade-in-up">
-                <div class="section-tag">Portfolio</div>
-                <h2 class="section-title">Featured Projects</h2>
-                <div class="section-divider"></div>
-                <p class="section-subtitle">Selected work I'm proud of</p>
-            </div>
-            <div class="row g-4">
-                @foreach (var project in _projects)
-                {
-                    <div class="col-md-6 col-lg-4 fade-in-up delay-2">
-                        <div class="card project-card h-100" style="position:relative;">
-                            @if (project.IsFeatured)
-                            {
-                                <span class="featured-badge"><i class="bi bi-star-fill me-1"></i>Featured</span>
-                            }
-                            <div class="project-img">
-                                @if (!string.IsNullOrEmpty(project.ImageUrl))
-                                {
-                                    <img src="@project.ImageUrl" alt="@project.Title" class="w-100 h-100" style="object-fit: cover;" />
-                                }
-                                else
-                                {
-                                    <i class="bi bi-code-slash text-muted opacity-25"></i>
-                                }
-                            </div>
-                            <div class="card-body">
-                                <h5 class="fw-700 mb-2">@project.Title</h5>
-                                <p class="text-secondary small mb-3" style="flex:1;">@project.Description</p>
-                                <div class="mb-3">
-                                    @foreach (var tech in project.TechStack.Split(','))
-                                    {
-                                        <span class="tech-tag">@tech.Trim()</span>
-                                    }
-                                </div>
-                                <div class="d-flex gap-2 mt-auto">
-                                    @if (!string.IsNullOrEmpty(project.GitHubUrl))
-                                    {
-                                        <a href="@project.GitHubUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-github me-1"></i>Code
-                                        </a>
-                                    }
-                                    @if (!string.IsNullOrEmpty(project.DemoUrl))
-                                    {
-                                        <a href="@project.DemoUrl" target="_blank" class="btn btn-sm btn-accent">
-                                            <i class="bi bi-box-arrow-up-right me-1"></i>Live Demo
-                                        </a>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-            <div class="text-center mt-5 fade-in-up delay-4">
-                <a href="/projects" class="btn btn-accent">See All Projects <i class="bi bi-arrow-right ms-1"></i></a>
+            <div class="cta-band" data-reveal>
+                <div>
+                    <h2>Say hello</h2>
+                    <p>Have a project, a role or a question in mind? Send a message and I'll get back to you.</p>
+                </div>
+                <div class="hero-actions">
+                    <a href="/contact" class="btn-accent">Send a message <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    @if (!string.IsNullOrEmpty(_profile.Email))
+                    {
+                        <a href="mailto:@_profile.Email" class="text-link">@_profile.Email</a>
+                    }
+                </div>
             </div>
         </div>
     </section>
@@ -205,20 +144,37 @@ else if (_profile is not null)
 
 @code {
     private UserProfile? _profile;
+
+    // "Peter Anthony" -> "Peter " + "Anthony"; the last word is set in italic accent.
+    private string _nameStart => _profile is null ? "" :
+        _profile.FullName.Contains(' ') ? _profile.FullName[..(_profile.FullName.LastIndexOf(' ') + 1)] : "";
+    private string _nameEnd => _profile is null ? "" :
+        _profile.FullName.Contains(' ') ? _profile.FullName[(_profile.FullName.LastIndexOf(' ') + 1)..] : _profile.FullName;
     private List<PortfolioApp.Domain.Entities.Experience> _experiences = new();
     private List<Project> _projects = new();
     private int _projectCount;
     private int _skillCount;
+    private int _yearsExperience;
+    private int _companyCount;
     private bool _loading = true;
 
     protected override async Task OnInitializedAsync()
     {
         _profile = await ProfileService.GetProfileAsync();
         _experiences = await ExperienceService.GetAllAsync();
-        _projects = (await ProjectService.GetAllAsync()).Where(p => p.IsFeatured).Take(3).ToList();
-        _projectCount = await ProjectService.GetTotalCountAsync();
-        var skills = await SkillService.GetAllAsync();
-        _skillCount = skills.Count;
+
+        var allProjects = await ProjectService.GetAllAsync();
+        _projectCount = allProjects.Count;
+        _projects = allProjects.Where(p => p.IsFeatured).Take(4).ToList();
+
+        _skillCount = (await SkillService.GetAllAsync()).Count;
+
+        if (_experiences.Count > 0)
+        {
+            var earliest = _experiences.Min(e => e.StartDate);
+            _yearsExperience = (int)((DateTime.UtcNow - earliest).TotalDays / 365.25);
+            _companyCount = _experiences.Select(e => e.Company.Trim().ToLowerInvariant()).Distinct().Count();
+        }
         _loading = false;
     }
 }

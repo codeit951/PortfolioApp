@@ -1,0 +1,21 @@
+@* One degree or certification in a dated list (education page, CV). *@
+
+<li class="entry">
+    <div class="entry-when">@Qualification.Year</div>
+    <div>
+        <h3 class="entry-title">@Qualification.Title</h3>
+        <p class="entry-org">@Qualification.Institution</p>
+        @if (!string.IsNullOrEmpty(Qualification.Grade))
+        {
+            <p class="entry-meta">@Qualification.Grade</p>
+        }
+        @if (!string.IsNullOrEmpty(Qualification.Description))
+        {
+            <p class="entry-body">@Qualification.Description</p>
+        }
+    </div>
+</li>
+
+@code {
+    [Parameter, EditorRequired] public Qualification Qualification { get; set; } = default!;
+}

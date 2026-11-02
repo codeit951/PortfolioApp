@@ -1,36 +1,46 @@
 @inject IJSRuntime JS
-@inject NavigationManager Nav
+@inject IUserProfileService ProfileService
 @rendermode InteractiveServer
 
-<nav class="navbar navbar-expand-lg">
-    <div class="container">
-        <a class="navbar-brand" href="/">{ Codeit }</a>
+<header class="site-nav">
+    <nav class="container nav-inner" aria-label="Main">
+        <a class="brand" href="/">@_brand<span class="brand-dot" aria-hidden="true"></span></a>
 
-        <div class="d-flex align-items-center gap-2 order-lg-3">
-            <button class="dark-toggle" @onclick="ToggleDarkMode" title="Toggle dark mode">
-                <i class="bi @(_isDark ? "bi-sun-fill" : "bi-moon-stars-fill")"></i>
+        <div class="nav-actions">
+            <button type="button" class="icon-btn" @onclick="ToggleDarkMode"
+                    aria-label="@(_isDark ? "Switch to light theme" : "Switch to dark theme")"
+                    title="@(_isDark ? "Light theme" : "Dark theme")">
+                <i class="bi bi-circle-half" aria-hidden="true"></i>
             </button>
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
-                <span class="navbar-toggler-icon"></span>
+            <button class="icon-btn nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
+                    aria-controls="navMain" aria-expanded="false" aria-label="Open menu">
+                <i class="bi bi-list" aria-hidden="true"></i>
             </button>
         </div>
 
-        <div class="collapse navbar-collapse order-lg-2" id="navMain">
-            <ul class="navbar-nav ms-auto gap-1">
-                <li class="nav-item"><NavLink class="nav-link" href="/" Match="NavLinkMatch.All"><i class="bi bi-house-door me-1"></i>Home</NavLink></li>
-                <li class="nav-item"><NavLink class="nav-link" href="/cv"><i class="bi bi-file-text me-1"></i>CV</NavLink></li>
-                <li class="nav-item"><NavLink class="nav-link" href="/skills"><i class="bi bi-lightning me-1"></i>Skills</NavLink></li>
-                <li class="nav-item"><NavLink class="nav-link" href="/experience"><i class="bi bi-briefcase me-1"></i>Experience</NavLink></li>
-                <li class="nav-item"><NavLink class="nav-link" href="/qualifications"><i class="bi bi-mortarboard me-1"></i>Qualifications</NavLink></li>
-                <li class="nav-item"><NavLink class="nav-link" href="/projects"><i class="bi bi-grid me-1"></i>Projects</NavLink></li>
-                <li class="nav-item"><NavLink class="nav-link" href="/contact"><i class="bi bi-envelope me-1"></i>Contact</NavLink></li>
+        <div class="collapse nav-menu" id="navMain">
+            <ul class="nav-links">
+                <li><NavLink href="/" Match="NavLinkMatch.All">Home</NavLink></li>
+                <li><NavLink href="/projects">Projects</NavLink></li>
+                <li><NavLink href="/experience">Experience</NavLink></li>
+                <li><NavLink href="/skills">Skills</NavLink></li>
+                <li><NavLink href="/qualifications">Education</NavLink></li>
+                <li><NavLink href="/cv">CV</NavLink></li>
+                <li><NavLink href="/contact">Contact</NavLink></li>
             </ul>
         </div>
-    </div>
-</nav>
+    </nav>
+</header>
 
 @code {
     private bool _isDark;
+    private string _brand = "Portfolio";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var name = (await ProfileService.GetProfileAsync())?.FullName;
+        if (!string.IsNullOrWhiteSpace(name)) _brand = name;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
